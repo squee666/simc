@@ -741,6 +741,7 @@ void print_html_action_info( report::sc_html_stream& os, unsigned stats_mask,
           "<li><span class=\"label\">base_cost:</span>%.1f</li>\n"
           "<li><span class=\"label\">secondary_cost:</span>%.1f</li>\n"
           "<li><span class=\"label\">cooldown:</span>%.3f</li>\n"
+          "<li><span class=\"label\">cooldown hasted:</span>%s</li>\n"
           "<li><span class=\"label\">base_execute_time:</span>%.2f</li>\n"
           "<li><span class=\"label\">base_crit:</span>%.2f</li>\n"
           "<li><span class=\"label\">target:</span>%s</li>\n"
@@ -754,6 +755,7 @@ void print_html_action_info( report::sc_html_stream& os, unsigned stats_mask,
           a->min_gcd.total_seconds(), a->base_costs[ a->current_resource() ],
           a->secondary_costs[ a->current_resource() ],
           a->cooldown->duration.total_seconds(),
+          a->cooldown->hasted ? "true" : "false",
           a->base_execute_time.total_seconds(), a->base_crit,
           a->target ? a->target->name() : "", a->harmful ? "true" : "false",
           util::encode_html( a->option.if_expr_str ).c_str() );
@@ -796,10 +798,12 @@ void print_html_action_info( report::sc_html_stream& os, unsigned stats_mask,
             "class=\"label\">spell_power_mod.direct:</span>%.6f</li>\n"
             "<li><span class=\"label\">base_dd_min:</span>%.2f</li>\n"
             "<li><span class=\"label\">base_dd_max:</span>%.2f</li>\n"
+            "<li><span class=\"label\">base_dd_mult:</span>%.2f</li>\n"
             "</ul>\n"
             "</div>\n",
             a->may_crit ? "true" : "false", a->attack_power_mod.direct,
-            a->spell_power_mod.direct, a->base_dd_min, a->base_dd_max );
+            a->spell_power_mod.direct, a->base_dd_min, a->base_dd_max,
+            a->base_dd_multiplier );
       }
       if ( a->dot_duration > timespan_t::zero() )
       {
@@ -812,6 +816,7 @@ void print_html_action_info( report::sc_html_stream& os, unsigned stats_mask,
             "<li><span class=\"label\">attack_power_mod.tick:</span>%.6f</li>\n"
             "<li><span class=\"label\">spell_power_mod.tick:</span>%.6f</li>\n"
             "<li><span class=\"label\">base_td:</span>%.2f</li>\n"
+            "<li><span class=\"label\">base_td_mult:</span>%.2f</li>\n"
             "<li><span class=\"label\">dot_duration:</span>%.2f</li>\n"
             "<li><span class=\"label\">base_tick_time:</span>%.2f</li>\n"
             "<li><span class=\"label\">hasted_ticks:</span>%s</li>\n"
@@ -820,7 +825,7 @@ void print_html_action_info( report::sc_html_stream& os, unsigned stats_mask,
             "</div>\n",
             a->tick_may_crit ? "true" : "false",
             a->tick_zero ? "true" : "false", a->attack_power_mod.tick,
-            a->spell_power_mod.tick, a->base_td,
+            a->spell_power_mod.tick, a->base_td, a -> base_td_multiplier,
             a->dot_duration.total_seconds(), a->base_tick_time.total_seconds(),
             a->hasted_ticks ? "true" : "false",
             util::dot_behavior_type_string( a->dot_behavior ) );
@@ -940,11 +945,6 @@ void print_html_gear( report::sc_html_stream& os, const player_t& p )
     {
       item_sim_desc += ", stats: { ";
       item_sim_desc += item.item_stats_str();
-      if ( item.parsed.suffix_stats.size() > 0 )
-      {
-        item_sim_desc += ", " + item.suffix_stats_str();
-      }
-
       item_sim_desc += " }";
     }
 
@@ -2187,7 +2187,7 @@ void print_html_player_action_priority_list( report::sc_html_stream& os,
     {
       if ( j == 12 )
         j = 2;
-      os.printf( ".{}_seq_target_{} {{ color: #{}; }}\n", p.name(),
+      os.printf( ".%s_seq_target_%s { color: #%s; }\n", p.name(),
                  targets[ i ].c_str(), colors[ j ] );
       j++;
     }
@@ -3253,12 +3253,14 @@ void print_html_player_description( report::sc_html_stream& os,
       "<li><b>Level:</b> %d%s</li>\n"
       "<li><b>Role:</b> %s</li>\n"
       "<li><b>Position:</b> %s</li>\n"
+      "<li><b>Profile Source:</b> %s</li>\n"
       "</ul>\n"
       "<div class=\"clear\"></div>\n",
       p.level(), sim.timewalk > 0 && !p.is_enemy() ? timewalk_str.c_str() : "",
       util::inverse_tokenize( util::role_type_string( p.primary_role() ) )
           .c_str(),
-      p.position_str.c_str() );
+      p.position_str.c_str(),
+      util::profile_source_string( p.profile_source_ ) );
 }
 
 // print_html_player_results_spec_gear ======================================

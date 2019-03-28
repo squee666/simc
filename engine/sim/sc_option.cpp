@@ -598,7 +598,7 @@ void opts::parse( sim_t*                 sim,
 {
   for (auto & s : splits)
   {
-    
+
     auto index = s.find_first_of( '=' );
 
     if ( index == std::string::npos )
@@ -660,7 +660,9 @@ bool option_db_t::parse_file( std::istream& input )
       continue;
     }
 
-    auto substring = buffer.substr(std::distance( it, buffer.begin() ));
+    auto len = std::distance( buffer.begin(), it );
+    assert(len >= 0 && as<size_t>(len) <= buffer.size());
+    auto substring = buffer.substr(len);
     parse_line( io::maybe_latin1_to_utf8( substring ) );
   }
   return true;
@@ -850,6 +852,8 @@ option_db_t::option_db_t()
     auto_path.push_back( path + "generators" );
     auto_path.push_back( path + "generators/PreRaids" );
     auto_path.push_back( path + "PreRaids" );
+    auto_path.push_back( path + "generators/DungeonSlice" );
+    auto_path.push_back( path + "DungeonSlice" );
 
     // Add profiles for each tier
     for ( unsigned i = 0; i < N_TIER; ++i )

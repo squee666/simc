@@ -141,6 +141,7 @@ namespace racial
 {
   void touch_of_the_grave( special_effect_t& );
   void entropic_embrace( special_effect_t& );
+  void zandalari_loa( special_effect_t& );
 }
 
 /**
@@ -2409,7 +2410,7 @@ void item::readiness( special_effect_t& effect )
 
   const spell_data_t* cdr_spell = p -> find_spell( effect.spell_id );
   const random_prop_data_t& budget = p -> dbc.random_property( effect.item -> item_level() );
-  double cdr = 1.0 / ( 1.0 + budget.p_epic[ 0 ] * cdr_spell -> effectN( 1 ).m_average() / 100.0 );
+  double cdr = 1.0 / ( 1.0 + budget.p_epic[ 0 ] * cdr_spell -> effectN( 1 ).m_coefficient() / 100.0 );
 
   if ( p -> level() > 90 )
   { // We have no clue how the trinket actually scales down with level. This will linearly decrease CDR until it hits .90 at level 100.
@@ -2476,7 +2477,7 @@ void item::amplification( special_effect_t& effect )
   }
 
   const random_prop_data_t& budget = p -> dbc.random_property( effect.item -> item_level() );
-  *amp_value = budget.p_epic[ 0 ] * amplify_spell -> effectN( 2 ).m_average() / 100.0;
+  *amp_value = budget.p_epic[ 0 ] * amplify_spell -> effectN( 2 ).m_coefficient() / 100.0;
   if ( p -> level() > 90 )
   { // We have no clue how the trinket actually scales down with level. This will linearly decrease amplification until it hits 0 at level 100.
     double level_nerf = ( static_cast<double>( p -> level() ) - 90 ) / 10.0;
@@ -2611,7 +2612,7 @@ void item::cleave( special_effect_t& effect )
 
   // Needs a damaging result
   effect.proc_flags2_ = PF2_ALL_HIT;
-  effect.proc_chance_ = budget.p_epic[ 0 ] * cleave_driver_spell -> effectN( 1 ).m_average() / 10000.0;
+  effect.proc_chance_ = budget.p_epic[ 0 ] * cleave_driver_spell -> effectN( 1 ).m_coefficient() / 10000.0;
 
   if ( p -> level() > 90 )
   { // We have no clue how the trinket actually scales down with level. This will linearly decrease amplification until it hits 0 at level 100.
@@ -3102,7 +3103,7 @@ struct mark_of_doom_t : public buff_t
     effect = new special_effect_t( p.source );
     effect -> name_str = "mark_of_doom_damage_driver";
     effect -> proc_chance_ = 1.0;
-    effect -> proc_flags_ = PF_SPELL | PF_AOE_SPELL;
+    effect -> proc_flags_ = PF_MAGIC_SPELL | PF_NONE_SPELL;
     effect -> proc_flags2_ = PF2_ALL_HIT;
     p.source -> special_effects.push_back( effect );
 
@@ -3190,7 +3191,7 @@ struct prophecy_of_fear_constructor_t : public item_targetdata_initializer_t
 
 void item::prophecy_of_fear( special_effect_t& effect )
 {
-  effect.proc_flags_ = effect.driver() -> proc_flags() | PF_AOE_SPELL;
+  effect.proc_flags_ = effect.driver() -> proc_flags() | PF_NONE_SPELL;
   effect.proc_flags2_ = PF2_ALL_HIT;
 
   new prophecy_of_fear_driver_t( effect );
@@ -3713,6 +3714,141 @@ void racial::entropic_embrace( special_effect_t& effect )
   effect.custom_buff = base_buff;
 
   new dbc_proc_callback_t( effect.player, effect );
+}
+
+struct embrace_of_bwonsamdi_t : public spell_t
+{
+  embrace_of_bwonsamdi_t(player_t* p, const spell_data_t* sd) :
+    spell_t("embrace_of_bwonsamdi", p, sd)
+  {
+    background = true;
+    ap_type = AP_NO_WEAPON; //TOCHECK: Is this true? Based off of Touch of the Grave right now.
+    base_dd_min = base_dd_max = 0;
+    //Hardcoded tooltip values
+    attack_power_mod.direct = 0.22;
+    spell_power_mod.direct = 0.22;
+  }
+
+  double attack_direct_power_coefficient( const action_state_t* s ) const override
+  {
+    const double ap = attack_power_mod.direct * s -> composite_attack_power();
+    const double sp = spell_power_mod.direct * s -> composite_spell_power();
+
+    if ( ap <= sp )
+      return 0;
+    return spell_t::attack_direct_power_coefficient( s );
+  }
+
+  double spell_direct_power_coefficient( const action_state_t* s ) const override
+  {
+    const double ap = attack_power_mod.direct * s -> composite_attack_power();
+    const double sp = spell_power_mod.direct * s -> composite_spell_power();
+
+    if ( ap > sp )
+      return 0;
+    return spell_t::spell_direct_power_coefficient( s );
+  }
+};
+
+struct embrace_of_kimbul_t : public spell_t
+{
+  embrace_of_kimbul_t(player_t* p, const spell_data_t* sd) :
+    spell_t("embrace_of_kimbul", p, sd)
+  {
+    tick_may_crit = false; //TOCHECK: Longer test needed with max level character for these values
+    background = true;
+    hasted_ticks = false;
+    dot_max_stack = sd->max_stacks();
+    dot_behavior = DOT_REFRESH; //TOCHECK: Does the dot pandemic or should it be clipped?
+    ap_type = AP_NO_WEAPON;
+    attack_power_mod.tick = 0.075; //Hardcoded in tooltip
+    spell_power_mod.tick = 0.075;
+  }
+
+  double attack_tick_power_coefficient( const action_state_t* s ) const override
+  {
+    const double ap = attack_power_mod.tick * s -> composite_attack_power();
+    const double sp = spell_power_mod.tick * s -> composite_spell_power();
+
+    if ( ap <= sp )
+      return 0;
+    return spell_t::attack_tick_power_coefficient( s );
+  }
+
+  double spell_tick_power_coefficient( const action_state_t* s ) const override
+  {
+    const double ap = attack_power_mod.tick * s -> composite_attack_power();
+    const double sp = spell_power_mod.tick * s -> composite_spell_power();
+
+    if ( ap > sp )
+      return 0;
+    return spell_t::spell_tick_power_coefficient( s );
+  }
+};
+
+void racial::zandalari_loa( special_effect_t& effect )
+{
+  //only handle the proc loas here. 
+  //Gonk is handled in player_t::passive_movement_modifier() when chosen (TODO: Should we add a constant buff for report feedback when Gonk is chosen?)
+  if ( effect.player->zandalari_loa == player_t::AKUNDA )
+  {
+    //Akunda - Healing Proc (not implemented)
+  }
+  else if ( effect.player->zandalari_loa == player_t::BWONSAMDI )
+  {
+    //Bwonsamdi - 100% of damage done is returned as healing (healing not implemented)
+    special_effect_t* driver = new special_effect_t(effect.player);
+    driver->source = SPECIAL_EFFECT_SOURCE_RACE;
+    unique_gear::initialize_special_effect(*driver, 292360);
+    driver->execute_action = new embrace_of_bwonsamdi_t(effect.player, effect.player->find_spell(292380));
+
+    effect.player->special_effects.push_back(driver);
+
+    new dbc_proc_callback_t(effect.player, *driver);
+  }
+  else if ( effect.player->zandalari_loa == player_t::KIMBUL )
+  {
+    //Kimbul - Chance to apply bleed dot, max stack of 3
+    special_effect_t* driver = new special_effect_t(effect.player);
+    driver->source = SPECIAL_EFFECT_SOURCE_RACE;
+    unique_gear::initialize_special_effect(*driver, 292363);
+    driver->execute_action = new embrace_of_kimbul_t(effect.player, effect.player->find_spell(292473));
+
+    effect.player->special_effects.push_back(driver);
+    
+    new dbc_proc_callback_t(effect.player, *driver);
+  }
+  else if ( effect.player->zandalari_loa == player_t::KRAGWA )
+  {
+    //Kragwa - Grants health and armor (not implemented)
+  }
+  else if ( effect.player->zandalari_loa == player_t::PAKU )
+  {    
+    special_effect_t* driver = new special_effect_t(effect.player);
+    driver->source = SPECIAL_EFFECT_SOURCE_RACE;
+    unique_gear::initialize_special_effect(*driver, 292361); //Permanent buff spell id, contains proc data
+
+    //Paku - Grants crit chance
+    buff_t* paku = buff_t::find(effect.player, "embrace_of_paku");
+    if (paku == nullptr)
+    {
+      //Buff spell data contains duration and amount
+      paku = buff_creator_t( effect.player, "embrace_of_paku", effect.player->find_spell(292463) );
+      paku->add_invalidate(CACHE_CRIT_CHANCE);
+      paku->set_default_value(effect.player->find_spell(292463)->effectN(1).percent());
+    }
+
+    driver->custom_buff = paku;
+    effect.player->buffs.embrace_of_paku = paku;
+
+    effect.player->special_effects.push_back(driver);
+
+    new dbc_proc_callback_t(driver->player, *driver);
+  }
+  else
+  {
+    //Gonk so do nothing. Maybe want to add constant buff later?
+  }
 }
 
 // Figure out if a given generic buff (associated with a trinket/item) is a
@@ -4660,6 +4796,7 @@ void unique_gear::register_special_effects()
   /* Racial special effects */
   register_special_effect( 5227,   racial::touch_of_the_grave );
   register_special_effect( 255669, racial::entropic_embrace );
+  register_special_effect( 292751, racial::zandalari_loa );
 }
 
 void unique_gear::unregister_special_effects()
@@ -4683,6 +4820,7 @@ void unique_gear::register_target_data_initializers( sim_t* sim )
   sim -> register_target_data_initializer( prophecy_of_fear_constructor_t( 124230, trinkets ) );
 
   register_target_data_initializers_legion( sim );
+  register_target_data_initializers_bfa( sim );
   azerite::register_azerite_target_data_initializers( sim );
 }
 

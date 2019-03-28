@@ -12,6 +12,7 @@
 #include "sc_SimulateTab.hpp"
 #include "sc_WelcomeTab.hpp"
 #include "sc_AddonImportTab.hpp"
+#include "sc_UpdateCheck.hpp"
 #include "util/sc_mainwindowcommandline.hpp"
 #include "util/git_info.hpp"
 #if defined( Q_OS_MAC )
@@ -23,7 +24,7 @@
 
 namespace { // UNNAMED NAMESPACE
 
-constexpr int SC_GUI_HISTORY_VERSION = 801;
+constexpr int SC_GUI_HISTORY_VERSION = 810;
 
 #if ! defined( SC_USE_WEBKIT )
 struct HtmlOutputFunctor
@@ -116,8 +117,9 @@ void SC_MainWindow::updateSimProgress()
 void SC_MainWindow::loadHistory()
 {
   QSettings settings;
-  QString saveApiKey;
-  saveApiKey = settings.value( "options/apikey" ).toString();
+  QString apikey = settings.value( "options/apikey" ).toString();
+  QString credentials_id = settings.value( "options/api_client_id" ).toString();
+  QString credentials_secret = settings.value( "options/api_client_secret" ).toString();
 
   QVariant simulateHistory = settings.value( "user_data/simulateHistory" );
   if ( simulateHistory.isValid() )
@@ -138,7 +140,8 @@ void SC_MainWindow::loadHistory()
   if ( gui_version_number < SC_GUI_HISTORY_VERSION )
   {
     settings.clear();
-    settings.setValue( "options/apikey", saveApiKey );
+    settings.setValue( "options/api_client_id", credentials_id );
+    settings.setValue( "options/api_client_secret", credentials_secret );
     QMessageBox::information( this, tr("GUI settings reset"),
                               tr("We have reset your configuration settings due to major changes to the GUI") );
   }
@@ -174,6 +177,47 @@ void SC_MainWindow::loadHistory()
   if ( simulateTab -> count() <= 1 )
   { // If we haven't retrieved any simulate tabs from history, add a default one.
     simulateTab -> add_Text( defaultSimulateText, tr("Simulate!") );
+  }
+
+  // If we had an old apikey, display a popup explaining what's going on
+  if ( apikey.count() )
+  {
+    auto deprecated_apikey = new QMessageBox( this );
+
+    deprecated_apikey->addButton( tr( "I understand" ), QMessageBox::AcceptRole );
+    deprecated_apikey->setText( tr( "Armory API key is now deprecated" ) );
+    deprecated_apikey->setInformativeText( tr(
+        "<p>"
+          "On January 6th 2019, Blizzard is shutting down the old armory API endpoints "
+          "(see <a target=\"_blank\" href=\"https://dev.battle.net/docs\">here</a> and "
+          "<a target=\"_blank\" href=\"https://us.battle.net/forums/en/bnet/topic/20769317376\">here</a>). "
+          "You are seeing this notification because you have a custom Armory API key defined in the "
+          "Simulationcraft GUI options. To continue using the armory import feature, "
+          "your Armory API key must be updated."
+        "</p>"
+        "<p>"
+          "There are brief instructions below on how to create new credentials for Simulationcraft "
+          "to continue using the armory import feature. Note that if you are also using "
+          "<b>apikey.txt</b> or <b>simc_apikey</b>, you can choose to not update the GUI options, "
+          "and rather add the client credentials to that file. More information can be found "
+          "<a target=\"_blank\" href=\"https://github.com/simulationcraft/simc/wiki/BattleArmoryAPI\">here</a>."
+        "</p>"
+        "<ul>"
+          "<li>Go to <a target=\"_blank\" href=\"https://develop.battle.net\">https://develop.battle.net</a></li>"
+          "<li>Log in with your Battle.net account. Note that you need two-factor authentication enabled.</li>"
+          "<li>Select \"API ACCESS\" (at top left), and then create a new client</li>"
+          "<li>Select a unique name and click create, leave Redirect URIs empty</li>"
+          "<li>Under Simulationcraft GUI options, add the client id and secret</li>"
+        "</ul>" ) );
+
+    deprecated_apikey->show();
+  }
+
+  if ( settings.value( "options/update_check" ).toString() == "Yes" ||
+       !settings.contains( "options/update_check" ) )
+  {
+    auto updateCheck = new UpdateCheckWidget( this );
+    updateCheck->start();
   }
 }
 
@@ -797,7 +841,7 @@ void SC_MainWindow::startSim()
   //sim -> xml_file_str = (reportFileBase + ".xml").toStdString();
   sim -> reforge_plot_output_file_str = (reportFileBase + "_plotdata.csv").toStdString();
 
-  if ( optionsTab -> get_api_key().size() == 32 ) // api keys are 32 characters long, it's not worth parsing <32 character keys.
+  if ( optionsTab -> get_api_key().size() == 65 ) // api keys are 32 characters long, it's not worth parsing <32 character keys.
     sim -> parse_option( "apikey",  optionsTab -> get_api_key().toUtf8().constData() );
 
   if ( cmdLine -> currentState() != SC_MainWindowCommandLine::SIMULATING_MULTIPLE )
@@ -1063,6 +1107,7 @@ void SC_MainWindow::cmdLineTextEdited( const QString& s )
   case TAB_HELP:      cmdLineText = s; break;
   case TAB_LOG:       logFileText = s; break;
   case TAB_RESULTS:   resultsFileText = s; break;
+  default: break;
   }
 }
 
@@ -1084,12 +1129,14 @@ void SC_MainWindow::mainButtonClicked( bool /* checked */ )
 		switch ( importTab -> currentTab() )
 		{
 			case TAB_RECENT:     recentlyClosedTabImport -> restoreCurrentlySelected(); break;
+                        default: break;
 		}
 		break;
 	  case TAB_LOG: saveLog(); break;
 	  case TAB_RESULTS: saveResults(); break;
 	  case TAB_SPELLQUERY: spellQueryTab -> run_spell_query(); break;
 	  case TAB_COUNT: break;
+          default: break;
   }
 }
 
@@ -1125,6 +1172,7 @@ void SC_MainWindow::importButtonClicked()
 		  mainTab -> setCurrentTab( TAB_SIMULATE );
 	  }
 	  break;
+          default: break;
   }
 }
 
@@ -1164,6 +1212,7 @@ void SC_MainWindow::backButtonClicked( bool /* checked */ )
     {
     case TAB_OPTIONS:   break;
     case TAB_OVERRIDES: break;
+    default: break;
     }
   }
 }
@@ -1359,6 +1408,7 @@ void SC_MainWindow::currentlyViewedTabCloseRequest()
     resultsTab -> TabCloseRequest( resultsTab -> currentIndex() );
   }
   break;
+  default: break;
   }
 }
 

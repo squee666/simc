@@ -1,4 +1,5 @@
 hunter="PR_Hunter_Marksmanship"
+source=default
 spec=marksmanship
 level=120
 race=lightforged_draenei
@@ -26,62 +27,73 @@ actions.precombat+=/food
 actions.precombat+=/snapshot_stats
 actions.precombat+=/potion
 actions.precombat+=/hunters_mark
-actions.precombat+=/double_tap,precast_time=5
+# Precast this as early as possible to potentially gain another cast during the fight.
+actions.precombat+=/double_tap,precast_time=10
+actions.precombat+=/trueshot,precast_time=1.5,if=active_enemies>2
 actions.precombat+=/aimed_shot,if=active_enemies<3
-actions.precombat+=/explosive_shot,if=active_enemies>2
 
 # Executed every time the actor is available.
 actions=auto_shot
-actions+=/counter_shot,if=equipped.sephuzs_secret&target.debuff.casting.react&cooldown.buff_sephuzs_secret.up&!buff.sephuzs_secret.up
-actions+=/use_items
-actions+=/hunters_mark,if=debuff.hunters_mark.down
-actions+=/double_tap,if=cooldown.rapid_fire.remains<gcd
-actions+=/berserking,if=cooldown.trueshot.remains>30
-actions+=/blood_fury,if=cooldown.trueshot.remains>30
-actions+=/ancestral_call,if=cooldown.trueshot.remains>30
-actions+=/fireblood,if=cooldown.trueshot.remains>30
-actions+=/lights_judgment
-actions+=/potion,if=(buff.trueshot.react&buff.bloodlust.react)|((consumable.prolonged_power&target.time_to_die<62)|target.time_to_die<31)
-actions+=/trueshot,if=cooldown.aimed_shot.charges<1
-actions+=/barrage,if=active_enemies>1
-actions+=/explosive_shot,if=active_enemies>1
-actions+=/multishot,if=active_enemies>2&buff.precise_shots.up&cooldown.aimed_shot.full_recharge_time<gcd*buff.precise_shots.stack+action.aimed_shot.cast_time
-actions+=/arcane_shot,if=active_enemies<3&buff.precise_shots.up&cooldown.aimed_shot.full_recharge_time<gcd*buff.precise_shots.stack+action.aimed_shot.cast_time
-actions+=/aimed_shot,if=buff.precise_shots.down&buff.double_tap.down&(active_enemies>2&buff.trick_shots.up|active_enemies<3&full_recharge_time<cast_time+gcd)
-actions+=/rapid_fire,if=active_enemies<3|buff.trick_shots.up
-actions+=/explosive_shot
-actions+=/piercing_shot
-actions+=/a_murder_of_crows
-actions+=/multishot,if=active_enemies>2&buff.trick_shots.down
-actions+=/aimed_shot,if=buff.precise_shots.down&(focus>70|buff.steady_focus.down)
-actions+=/multishot,if=active_enemies>2&(focus>90|buff.precise_shots.up&(focus>70|buff.steady_focus.down&focus>45))
-actions+=/arcane_shot,if=active_enemies<3&(focus>70|buff.steady_focus.down&(focus>60|buff.precise_shots.up))
-actions+=/serpent_sting,if=refreshable
-actions+=/steady_shot
+# Try to line up activated trinkets with Trueshot
+actions+=/use_items,if=buff.trueshot.up|!talent.calling_the_shots.enabled|target.time_to_die<20
+actions+=/call_action_list,name=cds
+actions+=/call_action_list,name=st,if=active_enemies<3
+actions+=/call_action_list,name=trickshots,if=active_enemies>2
 
-head=coif_of_the_court_spider,id=159358,bonus_id=4779/1512/4775/4786
-neck=heart_of_azeroth,id=158075,bonus_id=4932/4933/4936/1524,azerite_level=
-shoulders=gaping_maw_shoulderguard,id=159352,bonus_id=4779/1512/4775/4786
-back=cloak_of_the_restless_tribes,id=159288,bonus_id=4779/1512/4786
-chest=loablessed_chestguard,id=158355,bonus_id=4779/1512/4775/4786
-wrists=bindings_of_the_calling_depths,id=159364,bonus_id=4779/1512/4786
-hands=water_shapers,id=159366,bonus_id=4779/1512/4786
-waist=chainlinked_safety_cord,id=159353,bonus_id=4779/1512/4786
-legs=unstoppable_zealots_legplates,id=159367,bonus_id=4779/1512/4786
-feet=boots_of_the_headlong_conqueror,id=159371,bonus_id=4779/1512/4786
-finger1=jade_ophidian_band,id=162544,bonus_id=4779/1512/4786,enchant=pact_of_mastery
-finger2=overseers_lost_seal,id=159460,bonus_id=4779/1512/4786,enchant=pact_of_mastery
-trinket1=lustrous_golden_plumage,id=159617,bonus_id=4779/1512/4786
-trinket2=azerokks_resonating_heart,id=159612,bonus_id=4779/1512/4786
-main_hand=korgus_blackpowder_rifle,id=159657,bonus_id=4779/1512/4786,enchant=masterful_navigation
+actions.cds=hunters_mark,if=debuff.hunters_mark.down&!buff.trueshot.up
+actions.cds+=/double_tap,if=cooldown.rapid_fire.remains<gcd|cooldown.rapid_fire.remains<cooldown.aimed_shot.remains|target.time_to_die<20
+actions.cds+=/berserking,if=buff.trueshot.up&(target.time_to_die>cooldown.berserking.duration+duration|(target.health.pct<20|!talent.careful_aim.enabled))|target.time_to_die<13
+actions.cds+=/blood_fury,if=buff.trueshot.up&(target.time_to_die>cooldown.blood_fury.duration+duration|(target.health.pct<20|!talent.careful_aim.enabled))|target.time_to_die<16
+actions.cds+=/ancestral_call,if=buff.trueshot.up&(target.time_to_die>cooldown.ancestral_call.duration+duration|(target.health.pct<20|!talent.careful_aim.enabled))|target.time_to_die<16
+actions.cds+=/fireblood,if=buff.trueshot.up&(target.time_to_die>cooldown.fireblood.duration+duration|(target.health.pct<20|!talent.careful_aim.enabled))|target.time_to_die<9
+actions.cds+=/lights_judgment
+actions.cds+=/potion,if=buff.trueshot.react&buff.bloodlust.react|buff.trueshot.up&ca_execute|target.time_to_die<25
+actions.cds+=/trueshot,if=focus>60&(buff.precise_shots.down&cooldown.rapid_fire.remains&target.time_to_die>cooldown.trueshot.duration_guess+duration|target.health.pct<20|!talent.careful_aim.enabled)|target.time_to_die<15
+
+actions.st=explosive_shot
+actions.st+=/barrage,if=active_enemies>1
+actions.st+=/a_murder_of_crows
+actions.st+=/serpent_sting,if=refreshable&!action.serpent_sting.in_flight
+actions.st+=/rapid_fire,if=buff.trueshot.down|focus<70
+actions.st+=/arcane_shot,if=buff.trueshot.up&buff.master_marksman.up
+actions.st+=/aimed_shot,if=buff.trueshot.up|(buff.double_tap.down|ca_execute)&buff.precise_shots.down|full_recharge_time<cast_time
+actions.st+=/piercing_shot
+actions.st+=/arcane_shot,if=buff.trueshot.down&(buff.precise_shots.up&(focus>41|buff.master_marksman.up)|(focus>50&azerite.focused_fire.enabled|focus>75)&(cooldown.trueshot.remains>5|focus>80)|target.time_to_die<5)
+actions.st+=/steady_shot
+
+actions.trickshots=barrage
+actions.trickshots+=/explosive_shot
+actions.trickshots+=/aimed_shot,if=buff.trick_shots.up&ca_execute&buff.double_tap.up
+actions.trickshots+=/rapid_fire,if=buff.trick_shots.up&(azerite.focused_fire.enabled|azerite.in_the_rhythm.rank>1|azerite.surging_shots.enabled|talent.streamline.enabled)
+actions.trickshots+=/aimed_shot,if=buff.trick_shots.up&(buff.precise_shots.down|cooldown.aimed_shot.full_recharge_time<action.aimed_shot.cast_time|buff.trueshot.up)
+actions.trickshots+=/rapid_fire,if=buff.trick_shots.up
+actions.trickshots+=/multishot,if=buff.trick_shots.down|buff.precise_shots.up&!buff.trueshot.up|focus>70
+actions.trickshots+=/piercing_shot
+actions.trickshots+=/a_murder_of_crows
+actions.trickshots+=/serpent_sting,if=refreshable&!action.serpent_sting.in_flight
+actions.trickshots+=/steady_shot
+
+head=hood_of_the_dark_reaper,id=159391,bonus_id=4779/1512/4786/4775,azerite_powers=192/30/13
+neck=heart_of_azeroth,id=158075,bonus_id=4929/1524,azerite_level=27
+shoulders=hookbarbed_spaulders,id=159376,bonus_id=4779/1512/4786/4775,azerite_powers=479/30/13
+back=drape_of_the_loyal_vassal,id=158375,bonus_id=4779/1512/4786
+chest=corrupted_hexxers_vestments,id=159370,bonus_id=4779/1512/4786/4775,azerite_powers=482/22/13
+wrists=slaughterhousechain_bracers,id=159397,bonus_id=4779/1512/4786
+hands=sepulchral_constructs_gloves,id=160213,bonus_id=4779/1512/4786
+waist=shalebiter_interlinked_chain,id=159361,bonus_id=4779/1512/4786
+legs=sea_priests_greaves,id=159359,bonus_id=4779/1512/4786
+feet=surefoot_sabatons,id=159379,bonus_id=4779/1512/4786
+finger1=footbomb_championship_ring,id=159462,bonus_id=4779/1512/4786,enchant=pact_of_haste
+finger2=seal_of_questionable_loyalties,id=158314,bonus_id=4779/1512/4786,enchant=pact_of_haste
+trinket1=harlans_loaded_dice,id=155881,bonus_id=4779/1512
+trinket2=galecallers_boon,id=159614,bonus_id=4779/1512/4786
+main_hand=hallowed_ossein_longbow,id=158711,bonus_id=4779/1512/4786,enchant=incendiary_ammunition
 
 # Gear Summary
 # gear_ilvl=341.47
-# gear_agility=2678
+# gear_agility=2883
 # gear_stamina=4465
-# gear_crit_rating=268
-# gear_haste_rating=300
-# gear_mastery_rating=1173
-# gear_versatility_rating=880
-# gear_armor=2059
-summon_pet=cat
+# gear_crit_rating=456
+# gear_haste_rating=985
+# gear_mastery_rating=1036
+# gear_armor=2063

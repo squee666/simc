@@ -9,7 +9,11 @@
 #include <unordered_map>
 #include <functional>
 
+#include "util/rapidjson/document.h"
+
 #include "sc_timespan.hpp"
+
+#include "dbc/azerite.hpp"
 
 struct spell_data_t;
 struct item_t;
@@ -18,6 +22,7 @@ struct sim_t;
 struct action_t;
 struct expr_t;
 struct special_effect_t;
+struct spelleffect_data_t;
 
 namespace azerite
 {
@@ -34,13 +39,6 @@ class azerite_state_t;
  */
 class azerite_power_t
 {
-  /// Time type conversion for azerite_power_t::time_value
-  enum time_type
-  {
-    MS = 0,
-    S,
-  };
-
   /// Actor the power belongs to
   const player_t*             m_player;
   /// Associated spell data
@@ -49,19 +47,30 @@ class azerite_power_t
   std::vector<unsigned>       m_ilevels;
   /// Cached scaled (total) value
   mutable std::vector<double> m_value;
+  /// Azerite power data entry (client data)
+  const azerite_power_entry_t* m_data;
 
+  /// Helper to check if the combat rating penalty needs to be applied to the azerite spell effect
+  bool check_combat_rating_penalty( size_t index = 1 ) const;
 public:
+  /// Time type conversion for azerite_power_t::time_value
+  enum time_type
+  {
+    MS = 0,
+    S,
+  };
+
   using azerite_value_fn_t = std::function<double(const azerite_power_t&)>;
 
   azerite_power_t();
-  azerite_power_t( const player_t* p, const spell_data_t* spell, const std::vector<const item_t*>& items );
-  azerite_power_t( const player_t* p, const spell_data_t* spell, const std::vector<unsigned>& ilevels );
+  azerite_power_t( const player_t* p, const azerite_power_entry_t* data, const std::vector<const item_t*>& items );
+  azerite_power_t( const player_t* p, const azerite_power_entry_t* data, const std::vector<unsigned>& ilevels );
 
   /// Implicit conversion to spell_data_t* object for easy use in accessors that accept spell data
   /// pointers
   operator const spell_data_t*() const;
 
-  // State of the azerite power
+  /// State of the azerite power
   bool ok() const;
   /// State of the azerite power
   bool enabled() const;
@@ -79,8 +88,15 @@ public:
   double percent( size_t index = 1 ) const;
   /// Return the raw budget values represented by the items for this azerite power.
   std::vector<double> budget() const;
-  /// List of items associated with this azerite power
+  /// Return the raw budget values represented by the items used for this power, using the given
+  /// spell as context
+  std::vector<double> budget( const spell_data_t* spell ) const;
+  /// List of item levels associated with this azerite power
   const std::vector<unsigned> ilevels() const;
+  /// Number of items worn with this azerite power
+  unsigned n_items() const;
+  /// Azerite power client data information
+  const azerite_power_entry_t* data() const;
 };
 
 namespace azerite
@@ -143,13 +159,20 @@ void register_azerite_powers();
 /// Register generic azerite powers target data initializers
 void register_azerite_target_data_initializers( sim_t* );
 
+/// Compute the <min, avg, max> value of the spell effect given, based on the azerite power
+std::tuple<int, int, int> compute_value( const azerite_power_t& power,
+    const spelleffect_data_t& effect );
+
+/// Parse azerite item information from the Blizzard Community API JSON output
+void parse_blizzard_azerite_information( item_t& item, const rapidjson::Value& data );
+
 namespace special_effects
 {
 void resounding_protection( special_effect_t& effect );
 void elemental_whirl( special_effect_t& effect );
 void blood_siphon( special_effect_t& effect );
-void lifespeed(special_effect_t& effect);
-void on_my_way(special_effect_t& effect);
+void lifespeed( special_effect_t& effect );
+void on_my_way( special_effect_t& effect );
 void champion_of_azeroth( special_effect_t& effect );
 void unstable_flames( special_effect_t& );
 void thunderous_blast( special_effect_t& );
@@ -170,8 +193,25 @@ void unstable_catalyst( special_effect_t& );
 void stand_as_one( special_effect_t& );
 void archive_of_the_titans( special_effect_t& );
 void laser_matrix( special_effect_t& );
-void blightborne_infusion( special_effect_t& );
 void incite_the_pack( special_effect_t& );
+void dagger_in_the_back( special_effect_t& );
+void rezans_fury( special_effect_t& );
+void secrets_of_the_deep( special_effect_t& );
+void combined_might( special_effect_t& );
+void relational_normalization_gizmo( special_effect_t& );
+void barrage_of_many_bombs( special_effect_t& );
+void meticulous_scheming( special_effect_t& );
+void synaptic_spark_capacitor( special_effect_t& );
+void ricocheting_inflatable_pyrosaw( special_effect_t& );
+void gutripper( special_effect_t& );
+void battlefield_focus_precision( special_effect_t& );
+void endless_hunger( special_effect_t& effect );
+void apothecarys_concoctions( special_effect_t& effect );
+void shadow_of_elune( special_effect_t& effect );
+void treacherous_covenant( special_effect_t& effect );
+void seductive_power( special_effect_t& effect );
+void bonded_souls( special_effect_t& effect );
+void fight_or_flight( special_effect_t& effect );
 } // Namespace special_effects ends
 
 } // Namespace azerite ends

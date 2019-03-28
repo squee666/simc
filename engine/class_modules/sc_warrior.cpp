@@ -9,6 +9,9 @@ namespace
 {  // UNNAMED NAMESPACE
 // ==========================================================================
 // Warrior
+// To Do: Clean up green text
+// Fury - Gathering Storm tick behavior - Fury needs 2 more
+// Arms - Clean up Crushing Assault (Whirlwind Fervor)
 // ==========================================================================
 
 struct warrior_t;
@@ -16,12 +19,15 @@ struct warrior_t;
 struct warrior_td_t : public actor_target_data_t
 {
   dot_t* dots_deep_wounds;
+  dot_t* dots_gushing_wound;
   dot_t* dots_ravager;
   dot_t* dots_rend;
   buff_t* debuffs_colossus_smash;
   buff_t* debuffs_siegebreaker;
   buff_t* debuffs_demoralizing_shout;
   buff_t* debuffs_taunt;
+  buff_t* debuffs_punish;
+  buff_t* debuffs_callous_reprisal;
 
   warrior_t& warrior;
   warrior_td_t( player_t* target, warrior_t& p );
@@ -52,6 +58,7 @@ public:
   std::vector<attack_t*> rampage_attacks;
   bool non_dps_mechanics, warrior_fixed_time;
   int into_the_fray_friends;
+  int never_surrender_percentage;
   double expected_max_health;
 
   auto_dispose<std::vector<data_t*> > cd_waste_exec, cd_waste_cumulative;
@@ -62,9 +69,10 @@ public:
   {
     action_t* deep_wounds_ARMS;
     action_t* deep_wounds_PROT;
-    action_t* scales_of_earth;
     action_t* charge;
     action_t* slaughter;  // Fury T21 2PC
+    action_t* iron_fortress; // Prot azerite trait                             
+    action_t* bastion_of_might_ip; // 0 rage IP from Bastion of Might azerite trait
   } active;
 
   // Buffs
@@ -73,14 +81,13 @@ public:
     buff_t* avatar;
     buff_t* ayalas_stone_heart;
     buff_t* deadly_calm;
+    buff_t* bastion_of_might;     // the mastery buff
     buff_t* berserker_rage;
     buff_t* bladestorm;
     buff_t* bounding_stride;
     buff_t* charge_movement;
     buff_t* defensive_stance;
-    buff_t* demoralizing_shout;
     buff_t* die_by_the_sword;
-    buff_t* dragon_scales;
     buff_t* enrage;
     buff_t* frothing_berserker;
     buff_t* furious_slash;
@@ -92,7 +99,6 @@ public:
     buff_t* into_the_fray;
     buff_t* last_stand;
     buff_t* meat_cleaver;
-    buff_t* neltharions_fury;
     buff_t* overpower;
     buff_t* rallying_cry;
     buff_t* ravager;
@@ -107,24 +113,33 @@ public:
     buff_t* vengeance_revenge;
     buff_t* vengeance_ignore_pain;
     buff_t* whirlwind;
-    buff_t* scales_of_earth;
     buff_t* tornados_eye;
     buff_t* protection_rage;
 
     buff_t* raging_thirst;
     buff_t* t20_fury_4p;
-    buff_t* executioners_precision;
-    buff_t* neltharions_thunder;
+
     // Legendary Items
-    buff_t* bindings_of_kakushan;
-    buff_t* kargaths_sacrificed_hands;
     buff_t* fujiedas_fury;
-    buff_t* destiny_driver;
     buff_t* xavarics_magnum_opus;
     buff_t* sephuzs_secret;
     buff_t* in_for_the_kill;
     buff_t* war_veteran;     // Arms T21 2PC
     buff_t* weighted_blade;  // Arms T21 4PC
+    // Azerite Traits
+    buff_t* bloodcraze;
+    buff_t* bloodcraze_driver;
+    buff_t* bloodsport;
+    buff_t* brace_for_impact;
+    buff_t* crushing_assault;
+    buff_t* executioners_precision;
+    buff_t* gathering_storm;
+    buff_t* infinite_fury;
+    buff_t* pulverizing_blows;
+    buff_t* striking_the_anvil;
+    buff_t* test_of_might_tracker;  // Used to track rage gain from test of might.
+    stat_buff_t* test_of_might;
+    buff_t* trample_the_weak;
   } buff;
 
   // Cooldowns
@@ -143,9 +158,11 @@ public:
     cooldown_t* enraged_regeneration;
     cooldown_t* execute;
     cooldown_t* heroic_leap;
+    cooldown_t* iron_fortress_icd;
     cooldown_t* last_stand;
     cooldown_t* mortal_strike;
     cooldown_t* overpower;
+    cooldown_t* rage_from_auto_attack;
     cooldown_t* rage_from_crit_block;
     cooldown_t* rage_of_the_valarjar_icd;
     cooldown_t* raging_blow;
@@ -166,7 +183,6 @@ public:
     gain_t* archavons_heavy_hand;
     gain_t* avoided_attacks;
     gain_t* critical_block;
-    gain_t* mannoroths_bloodletting_manacles;
     gain_t* meat_cleaver;
     gain_t* melee_crit;
     gain_t* melee_main_hand;
@@ -181,12 +197,15 @@ public:
     gain_t* endless_rage;
     gain_t* collateral_damage;
 
-    // Legendarys
-    gain_t* ceannar_rage;
-    gain_t* rage_from_damage_taken;
-    gain_t* valarjar_berserking;
-    gain_t* ravager;
+    // Legendarys, Azerite, and Special Effects
     gain_t* execute_refund;
+    gain_t* rage_from_damage_taken;
+    gain_t* ravager;
+    gain_t* ceannar_rage;
+    gain_t* cold_steel_hot_blood;
+    gain_t* valarjar_berserking;
+    gain_t* lord_of_war;
+    gain_t* simmering_rage;
   } gain;
 
   // Spells
@@ -200,6 +219,9 @@ public:
     const spell_data_t* intervene;
     const spell_data_t* siegebreaker_debuff;
     const spell_data_t* whirlwind_buff;
+    const spell_data_t* ravager_protection;
+    const spell_data_t* shield_block_buff;
+    const spell_data_t* riposte;
   } spell;
 
   // Mastery
@@ -248,7 +270,6 @@ public:
     const spell_data_t* rallying_cry;
     const spell_data_t* rampage;
     const spell_data_t* revenge;
-    const spell_data_t* riposte;
     const spell_data_t* seasoned_soldier;
     const spell_data_t* shield_block;
     const spell_data_t* shield_block_2;
@@ -268,131 +289,130 @@ public:
     const spell_data_t* arms_warrior;
     const spell_data_t* fury_warrior;
     const spell_data_t* prot_warrior;
+    const spell_data_t* avatar;
+    const spell_data_t* vanguard;
   } spec;
 
   // Talents
   struct talents_t
   {
-    const spell_data_t* endless_rage;
-    const spell_data_t* fresh_meat;
+    // Arms
     const spell_data_t* war_machine;
-    const spell_data_t* defensive_stance;
+    const spell_data_t* sudden_death;
+    const spell_data_t* skullsplitter;
 
     const spell_data_t* double_time;
+    const spell_data_t* impending_victory;
     const spell_data_t* storm_bolt;
 
-    const spell_data_t* avatar;
+    const spell_data_t* massacre;
     const spell_data_t* fervor_of_battle;
     const spell_data_t* rend;
-    const spell_data_t* sudden_death;
 
-    const spell_data_t* bounding_stride;
-    const spell_data_t* crackling_thunder;
-    const spell_data_t* furious_charge;
     const spell_data_t* second_wind;  // NYI
-    const spell_data_t* warpaint;
+    const spell_data_t* bounding_stride;
+    const spell_data_t* defensive_stance;
+
     const spell_data_t* collateral_damage;
+    const spell_data_t* warbreaker;
+    const spell_data_t* cleave;
 
-    const spell_data_t* best_served_cold;
-    const spell_data_t* bladestorm;
-    const spell_data_t* frothing_berserker;
     const spell_data_t* in_for_the_kill;
-    const spell_data_t* indomitable;
-    const spell_data_t* massacre;
-    const spell_data_t* never_surrender;  // SORTA NYI
-
-    const spell_data_t* booming_voice;
+    const spell_data_t* avatar;
     const spell_data_t* deadly_calm;
-    const spell_data_t* devastator;
-    const spell_data_t* furious_slash;
-    const spell_data_t* inner_rage;
-    const spell_data_t* into_the_fray;
-    const spell_data_t* vengeance;
-    const spell_data_t* rumbling_earth;
 
     const spell_data_t* anger_management;
-    const spell_data_t* carnage;
-    const spell_data_t* dragon_roar;
-    const spell_data_t* heavy_repercussions;
-    const spell_data_t* ravager;
-    const spell_data_t* reckless_abandon;
-    const spell_data_t* cleave;
     const spell_data_t* dreadnaught;
+    const spell_data_t* ravager;
+
+    // Fury
+    // const spell_data_t* war_machine; see arms
+    const spell_data_t* endless_rage;
+    const spell_data_t* fresh_meat;
+    
+    // skipping t30 identital to arms
+
+    const spell_data_t* inner_rage;
+    // const spell_data_t* sudden_death; see arms
+    const spell_data_t* furious_slash;
+
+    const spell_data_t* furious_charge;
+    // const spell_data_t* bounding_stride; see arms
+    const spell_data_t* warpaint;
+
+    const spell_data_t* carnage;
+    // const spell_data_t* massacre; see arms
+    const spell_data_t* frothing_berserker;
+
     const spell_data_t* meat_cleaver;
+    const spell_data_t* dragon_roar;
+    const spell_data_t* bladestorm;
+
+    const spell_data_t* reckless_abandon;
+    // const spell_data_t* anger_management; see arms
     const spell_data_t* siegebreaker;
-    const spell_data_t* skullsplitter;
-    const spell_data_t* warbreaker;
+
+    // Protection
+    const spell_data_t* into_the_fray;
+    const spell_data_t* punish;
+    // const spell_data_t* impending_victory; see arms
+    
+    const spell_data_t* crackling_thunder;
+    // const spell_data_t* bounding_stride; see arms
+    const spell_data_t* safeguard; // NYI
+
+    const spell_data_t* best_served_cold;
+    const spell_data_t* unstoppable_force;
+    // const spell_data_t* dragon_roar; see fury
+
+    const spell_data_t* indomitable;
+    const spell_data_t* never_surrender;  // SORTA NYI
+    const spell_data_t* bolster;
+
+    const spell_data_t* menace; // NYI
+    const spell_data_t* rumbling_earth;
+    // const spell_data_t* storm_bolt; see arms
+
+    const spell_data_t* booming_voice;
+    const spell_data_t* vengeance;
+    const spell_data_t* devastator;
+
+    // const spell_data_t* anger_management; see arms
+    const spell_data_t* heavy_repercussions;
+    // const spell_data_t* ravager; see arms
   } talents;
 
   struct legendary_t
   {
     const spell_data_t* sephuzs_secret;
     const spell_data_t* valarjar_berserkers;
-    const spell_data_t* mannoroths_bloodletting_manacles;
     const spell_data_t* ceannar_charger;
     const spell_data_t* archavons_heavy_hand;
-    const spell_data_t* bindings_of_kakushan;
-    const spell_data_t* kargaths_sacrificed_hands;
     const spell_data_t* kazzalax_fujiedas_fury;
-    const spell_data_t* destiny_driver;
     const spell_data_t* prydaz_xavarics_magnum_opus;
     const spell_data_t* najentuss_vertebrae;
     const spell_data_t* ayalas_stone_heart;
     const spell_data_t* weight_of_the_earth;
     const spell_data_t* raging_fury;
     const spell_data_t* the_great_storms_eye;
-    const spell_data_t* ararats_bloodmirror;
 
     legendary_t()
       : sephuzs_secret( spell_data_t::not_found() ),
         valarjar_berserkers( spell_data_t::not_found() ),
-        mannoroths_bloodletting_manacles( spell_data_t::not_found() ),
         ceannar_charger( spell_data_t::not_found() ),
         archavons_heavy_hand( spell_data_t::not_found() ),
-        bindings_of_kakushan( spell_data_t::not_found() ),
-        kargaths_sacrificed_hands( spell_data_t::not_found() ),
         kazzalax_fujiedas_fury( spell_data_t::not_found() ),
-        destiny_driver( spell_data_t::not_found() ),
         prydaz_xavarics_magnum_opus( spell_data_t::not_found() ),
         najentuss_vertebrae( spell_data_t::not_found() ),
         ayalas_stone_heart( spell_data_t::not_found() ),
         weight_of_the_earth( spell_data_t::not_found() ),
         raging_fury( spell_data_t::not_found() ),
-        the_great_storms_eye( spell_data_t::not_found() ),
-        ararats_bloodmirror( spell_data_t::not_found() )
+        the_great_storms_eye( spell_data_t::not_found() )
     {
     }
 
   } legendary;
-
-  // Artifacts
-  struct artifact_spell_data_t
-  {
-    artifact_power_t executioners_precision;
-
-    artifact_power_t neltharions_fury;
-    artifact_power_t strength_of_the_earth_aspect;
-    artifact_power_t shatter_the_bones;
-    artifact_power_t rage_of_the_fallen;
-    artifact_power_t vrykul_shield_training;
-    artifact_power_t will_to_survive;
-    artifact_power_t toughness;
-    artifact_power_t rumbling_voice;
-    artifact_power_t might_of_the_vrykul;
-    artifact_power_t wall_of_steel;
-    artifact_power_t leaping_giants;
-    artifact_power_t scales_of_earth;
-    artifact_power_t intolerance;
-    artifact_power_t thunder_crash;
-    artifact_power_t dragon_skin;
-    artifact_power_t reflective_plating;
-    artifact_power_t dragon_scales;
-    artifact_power_t protection_of_the_valarjar;
-    artifact_power_t bastion_of_the_aspects;
-    artifact_power_t gleaming_scales;
-    artifact_power_t neltharions_thunder;
-  } artifact;
-
+  
   // Azerite traits
   struct
   {
@@ -401,12 +421,12 @@ public:
     azerite_power_t moment_of_glory;
     azerite_power_t bury_the_hatchet;
     // Prot
-    azerite_power_t reinforced_plating;
     azerite_power_t iron_fortress;
     azerite_power_t deafening_crash;
     azerite_power_t callous_reprisal;
     azerite_power_t brace_for_impact;
     azerite_power_t bloodsport;
+    azerite_power_t bastion_of_might;
     // Arms
     azerite_power_t test_of_might;
     azerite_power_t seismic_wave;
@@ -414,6 +434,7 @@ public:
     azerite_power_t gathering_storm;
     azerite_power_t executioners_precision;
     azerite_power_t crushing_assault;
+    azerite_power_t striking_the_anvil;
     // fury
     azerite_power_t trample_the_weak;
     azerite_power_t simmering_rage;
@@ -421,6 +442,8 @@ public:
     azerite_power_t pulverizing_blows;
     azerite_power_t infinite_fury;
     azerite_power_t bloodcraze;
+    azerite_power_t cold_steel_hot_blood;
+    azerite_power_t unbridled_ferocity;
   } azerite;
 
   // Default consumables
@@ -444,20 +467,20 @@ public:
       spec(),
       talents(),
       legendary(),
-      artifact(),
       azerite()
   {
     non_dps_mechanics =
         false;  // When set to false, disables stuff that isn't important, such as second wind, bloodthirst heal, etc.
     warrior_fixed_time    = true;
-    into_the_fray_friends = 0;
+    into_the_fray_friends = -1;
+    never_surrender_percentage = 70;
     expected_max_health   = 0;
 
     regen_type = REGEN_DISABLED;
 
     talent_points.register_validity_fn( [this]( const spell_data_t* spell ) {
       // Soul of the Battlelord
-      if ( find_item( 151650 ) )
+      if ( find_item_by_id( 151650 ) )
       {
         switch ( specialization() )
         {
@@ -487,13 +510,14 @@ public:
   void init_resources( bool ) override;
   void arise() override;
   void combat_begin() override;
-  double composite_attribute( attribute_e attr ) const override;
+  double composite_attribute_multiplier( attribute_e attr ) const override;
   double composite_rating_multiplier( rating_e rating ) const override;
   double composite_player_multiplier( school_e school ) const override;
   // double composite_player_target_multiplier( player_t* target, school_e school ) const override;
   double matching_gear_multiplier( attribute_e attr ) const override;
   double composite_melee_haste() const override;
-  double composite_armor_multiplier() const override;
+  // double composite_armor_multiplier() const override;
+  double composite_bonus_armor() const override;
   double composite_block() const override;
   double composite_block_reduction( action_state_t* s ) const override;
   double composite_parry_rating() const override;
@@ -506,10 +530,10 @@ public:
   double composite_crit_avoidance() const override;
   // double composite_melee_speed() const override;
   double composite_melee_crit_chance() const override;
-  // double composite_spell_crit_chance() const override;
+  double composite_melee_crit_rating() const override;
   double composite_player_critical_damage_multiplier( const action_state_t* ) const override;
   // double composite_leech() const override;
-  // double resource_gain( resource_e, double, gain_t* = nullptr, action_t* = nullptr ) override;
+  double resource_gain( resource_e, double, gain_t* = nullptr, action_t* = nullptr ) override;
   void teleport( double yards, timespan_t duration ) override;
   void trigger_movement( double distance, movement_direction_e direction ) override;
   void interrupt() override;
@@ -535,12 +559,8 @@ public:
   }
   role_e primary_role() const override;
   stat_e convert_hybrid_stat( stat_e s ) const override;
-  stat_e primary_stat() const override
-  {
-    return STAT_STRENGTH;
-  }
-  void assess_damage_imminent_pre_absorb( school_e, dmg_e, action_state_t* s ) override;
-  void assess_damage_imminent( school_e, dmg_e, action_state_t* s ) override;
+  // void assess_damage_imminent_pre_absorb( school_e, dmg_e, action_state_t* s ) override;
+  // void assess_damage_imminent( school_e, dmg_e, action_state_t* s ) override;
   void assess_damage( school_e, dmg_e, action_state_t* ) override;
   void target_mitigation( school_e, dmg_e, action_state_t* ) override;
   void copy_from( player_t* ) override;
@@ -575,10 +595,6 @@ public:
     if ( talents.endless_rage->ok() )
     {
       double gain_amount = talents.endless_rage->effectN( 1 ).trigger()->effectN( 1 ).resource( RESOURCE_RAGE );
-      if ( buff.recklessness->check() )
-      {
-        gain_amount *= 1.0 + spec.recklessness->effectN( 4 ).percent();
-      }
       resource_gain( RESOURCE_RAGE, gain_amount, gain.endless_rage );
     }
   }
@@ -595,7 +611,9 @@ struct warrior_action_t : public Base
     // mastery/buff damage increase.
     bool fury_mastery_direct, fury_mastery_dot;
     // talents
-    bool avatar, frothing_direct, frothing_dot, demo_shout, sweeping_strikes, deadly_calm;
+    bool avatar, frothing_direct, frothing_dot, sweeping_strikes, deadly_calm, booming_voice;
+    // azerite
+    bool crushing_assault;
 
     affected_by_t()
       : fury_mastery_direct( false ),
@@ -603,9 +621,10 @@ struct warrior_action_t : public Base
         avatar( false ),
         frothing_direct( false ),
         frothing_dot( false ),
-        demo_shout( false ),
         sweeping_strikes( false ),
-        deadly_calm( false )
+        deadly_calm( false ),
+        crushing_assault( false ),
+        booming_voice( false )
     {
     }
   } affected_by;
@@ -633,7 +652,7 @@ public:
     tactician_per_rage += ( player->spec.tactician->effectN( 1 ).percent() / 100 );
   }
 
-  virtual void init()
+  void init() override
   {
     if ( initialized )
       return;
@@ -649,19 +668,19 @@ public:
     }
 
     if ( ab::data().affected_by( p()->spec.fury_warrior->effectN( 1 ) ) )
-      ab::attack_power_mod.direct *= 1.0 + p()->spec.fury_warrior->effectN( 1 ).percent();
+      ab::base_dd_multiplier *= 1.0 + p()->spec.fury_warrior->effectN( 1 ).percent();
     if ( ab::data().affected_by( p()->spec.fury_warrior->effectN( 2 ) ) )
-      ab::attack_power_mod.tick *= 1.0 + p()->spec.fury_warrior->effectN( 2 ).percent();
+      ab::base_td_multiplier *= 1.0 + p()->spec.fury_warrior->effectN( 2 ).percent();
 
     if ( ab::data().affected_by( p()->spec.arms_warrior->effectN( 2 ) ) )
-      ab::attack_power_mod.direct *= 1.0 + p()->spec.arms_warrior->effectN( 2 ).percent();
+      ab::base_dd_multiplier *= 1.0 + p()->spec.arms_warrior->effectN( 2 ).percent();
     if ( ab::data().affected_by( p()->spec.arms_warrior->effectN( 3 ) ) )
-      ab::attack_power_mod.tick *= 1.0 + p()->spec.arms_warrior->effectN( 3 ).percent();
+      ab::base_td_multiplier *= 1.0 + p()->spec.arms_warrior->effectN( 3 ).percent();
 
     if ( ab::data().affected_by( p()->spec.prot_warrior->effectN( 1 ) ) )
-      ab::attack_power_mod.direct *= 1.0 + p()->spec.prot_warrior->effectN( 1 ).percent();
+      ab::base_dd_multiplier *= 1.0 + p()->spec.prot_warrior->effectN( 1 ).percent();
     if ( ab::data().affected_by( p()->spec.prot_warrior->effectN( 2 ) ) )
-      ab::attack_power_mod.tick *= 1.0 + p()->spec.prot_warrior->effectN( 2 ).percent();
+      ab::base_td_multiplier *= 1.0 + p()->spec.prot_warrior->effectN( 2 ).percent();
 
     ab::cooldown->hasted = ab::data().affected_by( p()->spell.headlong_rush->effectN( 1 ) );
     if ( ab::cooldown->hasted == false )  // Shield block is on a different effect for some reason.
@@ -673,9 +692,12 @@ public:
     affected_by.deadly_calm         = ab::data().affected_by( p()->talents.deadly_calm->effectN( 1 ) );
     affected_by.fury_mastery_direct = ab::data().affected_by( p()->mastery.unshackled_fury->effectN( 1 ) );
     affected_by.fury_mastery_dot    = ab::data().affected_by( p()->mastery.unshackled_fury->effectN( 2 ) );
-    affected_by.avatar              = ab::data().affected_by( p()->talents.avatar->effectN( 1 ) );
-    affected_by.demo_shout          = ab::data().affected_by( p()->spec.demoralizing_shout->effectN( 1 ) );
-    affected_by.sweeping_strikes    = ab::data().affected_by( p()->spec.sweeping_strikes->effectN( 1 ) );
+    affected_by.booming_voice       = ab::data().affected_by( p()->spec.demoralizing_shout->effectN( 3 ) );
+
+    if ( p()->specialization() == WARRIOR_PROTECTION )
+      affected_by.avatar              = ab::data().affected_by( p()->spec.avatar->effectN( 1 ) );
+    else
+      affected_by.avatar              = ab::data().affected_by( p()->talents.avatar->effectN( 1 ) );
 
     affected_by.frothing_direct =
         ab::data().affected_by( p()->talents.frothing_berserker->effectN( 1 ).trigger()->effectN( 1 ) );
@@ -725,21 +747,6 @@ public:
     return ab::n_targets();
   }
 
-  double composite_energize_amount( const action_state_t* state ) const override
-  {
-    double ea = ab::composite_energize_amount( state );
-
-    if ( this->energize_resource_() == RESOURCE_RAGE )
-    {
-      if ( p()->buff.recklessness->check() )
-      {
-        ea *= 1.0 + p()->spec.recklessness->effectN( 4 ).percent();
-      }
-    }
-
-    return ea;
-  }
-
   double cost() const override
   {
     double c = ab::cost();
@@ -767,6 +774,13 @@ public:
       m *= 1.0 + ( td->debuffs_siegebreaker->value() );
     }
 
+    if ( td -> debuffs_demoralizing_shout -> up() &&
+         p() -> talents.booming_voice -> ok() && 
+         affected_by.booming_voice )
+    {
+      m *= 1.0 + p() -> talents.booming_voice->effectN( 2 ).percent();
+    }
+
     return m;
   }
 
@@ -787,11 +801,6 @@ public:
     if ( affected_by.frothing_direct && p()->buff.frothing_berserker->up() )
     {
       dm *= 1.0 + p()->buff.frothing_berserker->data().effectN( 1 ).percent();
-    }
-
-    if ( affected_by.demo_shout && p()->talents.booming_voice->ok() && p()->buff.demoralizing_shout->check() )
-    {
-      dm *= 1.0 + p()->talents.booming_voice->effectN( 2 ).percent();
     }
 
     if ( affected_by.sweeping_strikes && s->chain_target > 0 )
@@ -916,19 +925,14 @@ public:
     {
       tactician();
     }
-    if ( p()->legendary.mannoroths_bloodletting_manacles->ok() )
-    {
-      p()->resource_gain(
-          RESOURCE_HEALTH,
-          ( ( tactician_cost() / p()->legendary.mannoroths_bloodletting_manacles->effectN( 2 ).base_value() ) *
-            p()->legendary.mannoroths_bloodletting_manacles->effectN( 1 ).percent() ) *
-              p()->resources.max[ RESOURCE_HEALTH ],
-          p()->gain.mannoroths_bloodletting_manacles );
-    }
-
+   
     ab::consume_resource();
 
     double rage = ab::last_resource_cost;
+
+    if ( p()->buff.test_of_might_tracker->check() )
+      p()->buff.test_of_might_tracker->current_value +=
+          ab::cost();  // Uses rage cost before deadly calm makes it cheaper.
 
     if ( p()->talents.anger_management->ok() )
     {
@@ -947,6 +951,10 @@ public:
     {
       p()->cooldown.overpower->reset( true );
       p()->proc.tactician->occur();
+      if ( p()->azerite.striking_the_anvil.ok() )
+      {
+        p()->buff.striking_the_anvil->trigger();
+      }
     }
   }
 
@@ -980,6 +988,7 @@ public:
         p()->cooldown.last_stand->adjust( timespan_t::from_seconds( cd_time_reduction ) );
         p()->cooldown.shield_wall->adjust( timespan_t::from_seconds( cd_time_reduction ) );
         p()->cooldown.demoralizing_shout->adjust( timespan_t::from_seconds( cd_time_reduction ) );
+        p()->cooldown.avatar->adjust( timespan_t::from_seconds( cd_time_reduction ) );
       }
     }
   }
@@ -1013,6 +1022,8 @@ struct warrior_attack_t : public warrior_action_t<melee_attack_t>
   virtual void execute()
   {
     base_t::execute();
+    if ( !special )  // Procs below only trigger on special attacks, not autos
+      return;
 
     if ( p()->talents.sudden_death->ok() && p()->buff.sudden_death->trigger() )
     {
@@ -1023,6 +1034,12 @@ struct warrior_attack_t : public warrior_action_t<melee_attack_t>
     {
       p()->cooldown.execute->reset( true );
     }
+
+    if ( affected_by.crushing_assault )
+    {
+      p()->buff.crushing_assault->expire();
+    }
+    p()->buff.crushing_assault->trigger();
   }
 
   player_t* select_random_target() const
@@ -1059,23 +1076,12 @@ struct devastate_t : public warrior_attack_t
   {
     weapon        = &( p->main_hand_weapon );
     impact_action = p->active.deep_wounds_PROT;
-    weapon_multiplier *= 1.0 + p->artifact.strength_of_the_earth_aspect.percent();
-    if ( p->talents.devastator->ok() )
-    {
-      background  = true;
-      trigger_gcd = timespan_t::zero();
-    }
-    else
-    {
-      parse_options( options_str );
-    }
+    parse_options( options_str );
   }
 
   void execute() override
   {
     warrior_attack_t::execute();
-
-    p()->buff.bindings_of_kakushan->trigger();
 
     if ( result_is_hit( execute_state->result ) && rng().roll( shield_slam_reset ) )
     {
@@ -1085,7 +1091,7 @@ struct devastate_t : public warrior_attack_t
 
   bool ready() override
   {
-    if ( !p()->has_shield_equipped() )
+    if ( !p()->has_shield_equipped() || p() -> talents.devastator -> ok() )
     {
       return false;
     }
@@ -1095,13 +1101,47 @@ struct devastate_t : public warrior_attack_t
 
 // Melee Attack =============================================================
 
+struct reckless_flurry_t : warrior_attack_t
+{
+  reckless_flurry_t( warrior_t* p )
+    : warrior_attack_t( "reckless_flurry", p, p->find_spell( 283810 ) )
+  {
+    background  = true;
+    base_dd_min = base_dd_max = p->azerite.reckless_flurry.value( 2 );
+  }
+};
+
+struct devastator_t : warrior_attack_t
+{
+  double shield_slam_reset;
+
+  devastator_t( warrior_t* p ) :
+    warrior_attack_t( "devastator", p, p -> talents.devastator -> effectN( 1 ).trigger() ),
+    shield_slam_reset( p -> talents.devastator -> effectN( 2 ).percent() )
+  {
+    background = true;
+    impact_action = p->active.deep_wounds_PROT;
+  }
+
+  void execute() override
+  {
+    warrior_attack_t::execute();
+
+    if ( rng().roll( shield_slam_reset ) )
+    {
+      p() -> cooldown.shield_slam -> reset( true );
+    }
+  }
+};
+
 struct melee_t : public warrior_attack_t
 {
+  warrior_attack_t* reckless_flurry;
   bool mh_lost_melee_contact, oh_lost_melee_contact;
   double base_rage_generation, arms_rage_multiplier, fury_rage_multiplier, seasoned_soldier_crit_mult;
-  devastate_t* devastator;
+  devastator_t* devastator;
   melee_t( const std::string& name, warrior_t* p )
-    : warrior_attack_t( name, p, spell_data_t::nil() ),
+    : warrior_attack_t( name, p, spell_data_t::nil() ), reckless_flurry( nullptr ),
       mh_lost_melee_contact( true ),
       oh_lost_melee_contact( true ),
       // arms and fury multipliers are both 1, adjusted by the spec scaling auras (x4 for Arms and x1 for Fury)
@@ -1122,8 +1162,12 @@ struct melee_t : public warrior_attack_t
     }
     if ( p->talents.devastator->ok() )
     {
-      devastator = new devastate_t( p, "" );
+      devastator = new devastator_t( p );
       add_child( devastator );
+    }
+    if ( p->azerite.reckless_flurry.ok() )
+    {
+      reckless_flurry = new reckless_flurry_t( p );
     }
   }
 
@@ -1132,8 +1176,12 @@ struct melee_t : public warrior_attack_t
     warrior_attack_t::init();
     affected_by.fury_mastery_direct = p()->mastery.unshackled_fury->ok();
     affected_by.avatar              = p()->talents.avatar->ok();
+    if ( p()->specialization() == WARRIOR_PROTECTION )
+      affected_by.avatar              = p()->spec.avatar->ok();
+    else
+      affected_by.avatar              = p()->talents.avatar->ok();
     affected_by.frothing_direct     = p()->talents.frothing_berserker->ok();
-    affected_by.demo_shout          = p()->spec.demoralizing_shout->ok();
+    affected_by.booming_voice       = p() -> talents.booming_voice -> ok();
   }
 
   void reset() override
@@ -1195,22 +1243,33 @@ struct melee_t : public warrior_attack_t
 
       if ( result_is_hit( execute_state->result ) )
       {
-        if ( p()->specialization() == WARRIOR_PROTECTION )
+        if ( p()->talents.devastator->ok() )
         {
-          if ( p()->talents.devastator->ok() )
-          {
-            p()->resource_gain( RESOURCE_RAGE,
-                                p()->talents.devastator->effectN( 1 ).trigger()->effectN( 3 ).resource( RESOURCE_RAGE ),
-                                p()->gain.melee_main_hand );
-            devastator->target = execute_state->target;
-            devastator->schedule_execute();
-          }
+          devastator->target = execute_state->target;
+          devastator->schedule_execute();
         }
-        else
+        trigger_rage_gain( execute_state );
+        if ( p()->azerite.reckless_flurry.ok() )  // does this need a spec = fury check?
         {
-          trigger_rage_gain( execute_state );
+          p()->cooldown.recklessness->adjust(
+              ( -1 * p()->azerite.reckless_flurry.spell_ref().effectN( 1 ).time_value() ) );
+        }
+        if ( p()->buff.infinite_fury->check() )  // does this need a spec = fury check?
+        {
+          ( p()->buff.infinite_fury->trigger() ); // auto attacks refresh the buff but do not trigger it initially
         }
       }
+    }
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    warrior_attack_t::impact( s );
+
+    if ( reckless_flurry && result_is_hit( s->result ) )
+    {
+      reckless_flurry->set_target( s->target );
+      reckless_flurry->execute();
     }
   }
 
@@ -1227,7 +1286,7 @@ struct melee_t : public warrior_attack_t
       }
       rage_gain *= 1.0 + p()->talents.war_machine->effectN( 2 ).percent();
     }
-    else
+    else if ( p() -> specialization() == WARRIOR_FURY )
     {
       rage_gain *= fury_rage_multiplier;
       if ( weapon->slot == SLOT_OFF_HAND )
@@ -1235,10 +1294,11 @@ struct melee_t : public warrior_attack_t
         rage_gain *= 0.5;
       }
       rage_gain *= 1.0 + p()->talents.war_machine->effectN( 2 ).percent();
-      if ( p()->buff.recklessness->check() )
-      {
-        rage_gain *= 1.0 + p()->spec.recklessness->effectN( 4 ).percent();
-      }
+    }
+    else 
+    {
+      // Protection generates a static 2 rage per successful auto attack landed
+      rage_gain = 2.0;
     }
 
     rage_gain = util::round( rage_gain, 1 );
@@ -1334,7 +1394,6 @@ struct mortal_strike_t20_t : public warrior_attack_t
     double am = warrior_attack_t::action_multiplier();
 
     am *= 1.0 + p()->buff.overpower->check_stack_value();
-    am *= 1.0 + p()->buff.executioners_precision->check_stack_value();
 
     return am;
   }
@@ -1382,7 +1441,6 @@ struct mortal_strike_t : public warrior_attack_t
     double am = warrior_attack_t::action_multiplier();
 
     am *= 1.0 + p()->buff.overpower->check_stack_value();
-    am *= 1.0 + p()->buff.executioners_precision->check_stack_value();
 
     return am;
   }
@@ -1394,6 +1452,13 @@ struct mortal_strike_t : public warrior_attack_t
     c += p()->legendary.archavons_heavy_hand->effectN( 1 ).resource( RESOURCE_RAGE );
 
     return c;
+  }
+
+  double bonus_da( const action_state_t* s ) const override
+  {
+    double b = warrior_attack_t::bonus_da( s );
+    b += p()->buff.executioners_precision->stack_value();
+    return b;
   }
 
   void execute() override
@@ -1495,11 +1560,13 @@ struct bladestorm_t : public warrior_attack_t
     if ( d->ticks_left() )
     {
       p()->buff.tornados_eye->trigger();
+      p()->buff.gathering_storm->trigger();
     }
     else
     {
       // only duration is refreshed on last tick
       p()->buff.tornados_eye->trigger( 0 );
+      p()->buff.gathering_storm->trigger( 0 );
     }
 
     warrior_attack_t::tick( d );
@@ -1556,16 +1623,31 @@ struct bloodthirst_heal_t : public warrior_heal_t
 
 // Bloodthirst ==============================================================
 
+struct gushing_wound_dot_t : public warrior_attack_t
+{
+  gushing_wound_dot_t( warrior_t* p ) : warrior_attack_t( "gushing_wound", p, p->find_spell( 288091 ) ) //288080 & 4 is CB
+  {
+    background = tick_may_crit = true;
+    hasted_ticks               = false;
+    base_td = p->azerite.cold_steel_hot_blood.value( 2 );
+  }
+};
+
 struct bloodthirst_t : public warrior_attack_t
 {
   bloodthirst_heal_t* bloodthirst_heal;
+  warrior_attack_t* gushing_wound;
   int aoe_targets;
   double enrage_chance;
+  double rage_from_cold_steel_hot_blood;
   bloodthirst_t( warrior_t* p, const std::string& options_str )
     : warrior_attack_t( "bloodthirst", p, p->spec.bloodthirst ),
       bloodthirst_heal( nullptr ),
-      aoe_targets( p->spell.whirlwind_buff->effectN( 1 ).base_value() ),
-      enrage_chance( p->spec.enrage->effectN( 2 ).percent() )
+      gushing_wound( nullptr ),
+      aoe_targets( as<int>( p->spell.whirlwind_buff->effectN( 1 ).base_value() ) ),
+      enrage_chance( p->spec.enrage->effectN( 2 ).percent() ),
+      //rage_from_cold_steel_hot_blood( (p->azerite.cold_steel_hot_blood.spell()->effectN( 1 ).base_value() ) / 10.0 )
+      rage_from_cold_steel_hot_blood( p->find_spell( 288087 )->effectN( 1 ).base_value() / 10.0 )
   {
     parse_options( options_str );
 
@@ -1580,6 +1662,12 @@ struct bloodthirst_t : public warrior_attack_t
     if ( p->talents.fresh_meat->ok() )
     {
       enrage_chance += p->talents.fresh_meat->effectN( 1 ).percent();
+    }
+
+    if ( p->azerite.cold_steel_hot_blood.ok() )
+    {
+      gushing_wound = new gushing_wound_dot_t( p );
+      add_child( gushing_wound );
     }
   }
 
@@ -1599,6 +1687,29 @@ struct bloodthirst_t : public warrior_attack_t
       return aoe_targets + 1;
     }
     return warrior_attack_t::n_targets();
+  }
+
+  double composite_crit_chance() const override
+  {
+    double c = warrior_attack_t::composite_crit_chance();
+    if ( p()->buff.bloodcraze->check() )
+      c += p()->buff.bloodcraze->check_stack_value() / p()->current.rating.attack_crit;
+    return c;
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    warrior_attack_t::impact( s );
+
+    if ( gushing_wound && execute_state->result == RESULT_CRIT )
+    {
+      gushing_wound->execute();
+    }
+
+    if ( p()->azerite.cold_steel_hot_blood.ok() && execute_state->result == RESULT_CRIT )
+    {
+      p()->resource_gain( RESOURCE_RAGE, rage_from_cold_steel_hot_blood, p()->gain.cold_steel_hot_blood );
+    }
   }
 
   void execute() override
@@ -1622,6 +1733,10 @@ struct bloodthirst_t : public warrior_attack_t
         p()->enrage();
       }
     }
+    if ( execute_state->result == RESULT_CRIT )
+    {
+      p()->buff.bloodcraze->expire();
+    }
   }
 };
 
@@ -1632,7 +1747,7 @@ struct furious_slash_t : public warrior_attack_t
   int aoe_targets;
   furious_slash_t( warrior_t* p, const std::string& options_str )
     : warrior_attack_t( "furious_slash", p, p->talents.furious_slash ),
-      aoe_targets( p->spell.whirlwind_buff->effectN( 2 ).percent() )
+      aoe_targets( as<int>( p->spell.whirlwind_buff->effectN( 2 ).base_value() ) )
   {
     parse_options( options_str );
     weapon              = &( p->off_hand_weapon );
@@ -1688,7 +1803,7 @@ struct charge_t : public warrior_attack_t
 
     if ( p->talents.double_time->ok() )
     {
-      cooldown->charges += p->talents.double_time->effectN( 1 ).base_value();
+      cooldown->charges += as<int>( p->talents.double_time->effectN( 1 ).base_value() );
       cooldown->duration += p->talents.double_time->effectN( 2 ).time_value();
     }
     p->cooldown.charge = cooldown;
@@ -1760,11 +1875,8 @@ struct intercept_t : public warrior_attack_t
     energize_type           = ENERGIZE_ON_CAST;
     energize_resource       = RESOURCE_RAGE;
 
-    if ( p->talents.double_time->ok() )
-    {
-      cooldown->charges += p->talents.double_time->effectN( 1 ).base_value();
-      cooldown->duration += p->talents.double_time->effectN( 2 ).time_value();
-    }
+    cooldown-> charges += as<int>( p-> spec.prot_warrior -> effectN( 3 ).base_value() );
+    cooldown-> duration += timespan_t::from_millis( p -> spec.prot_warrior -> effectN( 4 ).base_value() );
   }
 
   void execute() override
@@ -1817,8 +1929,14 @@ struct cleave_t : public warrior_attack_t
 
 struct colossus_smash_t : public warrior_attack_t
 {
+  bool lord_of_war;
+  double rage_from_lord_of_war;
   colossus_smash_t( warrior_t* p, const std::string& options_str )
-    : warrior_attack_t( "colossus_smash", p, p->spec.colossus_smash )
+    : warrior_attack_t( "colossus_smash", p, p->spec.colossus_smash ),
+      lord_of_war( false ),
+      rage_from_lord_of_war(
+        //( p->azerite.lord_of_war.spell()->effectN( 1 ).base_value() * p->azerite.lord_of_war.n_items() ) / 10.0 )
+          ( p->azerite.lord_of_war.spell()->effectN( 1 ).base_value() ) / 10.0 ) // 8.1 no extra rage with rank
   {
     if ( p->talents.warbreaker->ok() )
     {
@@ -1831,16 +1949,31 @@ struct colossus_smash_t : public warrior_attack_t
     }
   }
 
+  double bonus_da( const action_state_t* s ) const override
+  {
+    double b = warrior_attack_t::bonus_da( s );
+    b += p()->azerite.lord_of_war.value( 2 );
+    return b;
+  }
+
   void execute() override
   {
     warrior_attack_t::execute();
 
+    if ( p()->azerite.lord_of_war.ok() )
+    {
+      p()->resource_gain( RESOURCE_RAGE, rage_from_lord_of_war, p()->gain.lord_of_war );
+    }
+
     if ( result_is_hit( execute_state->result ) )
     {
       td( execute_state->target )->debuffs_colossus_smash->trigger();
+      p()->buff.test_of_might_tracker->trigger();
 
-      p()->buff.in_for_the_kill->trigger();
       p()->buff.war_veteran->trigger();
+
+      if ( p()->talents.in_for_the_kill->ok() )
+        p()->buff.in_for_the_kill->trigger();
     }
   }
 };
@@ -1860,7 +1993,6 @@ struct deep_wounds_ARMS_t : public warrior_attack_t
     double am = warrior_attack_t::action_multiplier();
 
     am *= 1.0 + p()->cache.mastery_value();
-    am += 0.08;  // Starts with an extra 8% on top of base mastery
 
     return am;
   }
@@ -1874,20 +2006,7 @@ struct deep_wounds_PROT_t : public warrior_attack_t
     : warrior_attack_t( "deep_wounds", p, p->spec.deep_wounds_PROT->effectN( 2 ).trigger() )
   {
     background = tick_may_crit = true;
-    hasted_ticks               = false;
-  }
-};
-
-// Scales of Earth ==============================================================
-
-struct scales_of_earth_t : public warrior_attack_t
-{
-  scales_of_earth_t( warrior_t* p )
-    : warrior_attack_t( "scales_of_earth", p,
-                        p->artifact.scales_of_earth.data().effectN( 1 ).trigger()->effectN( 2 ).trigger() )
-  {
-    background = true;
-    aoe        = -1;
+    hasted_ticks               = true;
   }
 };
 
@@ -1901,14 +2020,12 @@ struct demoralizing_shout : public warrior_attack_t
   {
     parse_options( options_str );
     rage_gain += p->talents.booming_voice->effectN( 1 ).resource( RESOURCE_RAGE );
-    radius *= 1.0 + p->artifact.rumbling_voice.data().effectN( 2 ).percent();
+    aoe = -1;
   }
 
   void execute() override
   {
     warrior_attack_t::execute();
-
-    p()->buff.demoralizing_shout->trigger( 1, data().effectN( 1 ).percent() );
     if ( rage_gain > 0 )
     {
       p()->resource_gain( RESOURCE_RAGE, rage_gain, p()->gain.booming_voice );
@@ -1918,10 +2035,8 @@ struct demoralizing_shout : public warrior_attack_t
   void impact( action_state_t* s ) override
   {
     warrior_attack_t::impact( s );
-    td( s->target )
-        ->debuffs_demoralizing_shout->trigger(
-            1, data().effectN( 1 ).percent(), 1.0,
-            p()->spec.demoralizing_shout->duration() * ( 1.0 + p()->artifact.rumbling_voice.percent() ) );
+    td( s->target ) -> debuffs_demoralizing_shout -> trigger( 
+      1, data().effectN( 1 ).percent(), 1.0, p()->spec.demoralizing_shout->duration()  );
   }
 };
 
@@ -1943,6 +2058,7 @@ struct dragon_roar_t : public warrior_attack_t
 struct execute_damage_t : public warrior_attack_t
 {
   double max_rage;
+  double cost_rage;
   execute_damage_t( warrior_t* p, const std::string& options_str )
     : warrior_attack_t( "execute", p, p->spec.execute->effectN( 1 ).trigger() ), max_rage( 40 )
   {
@@ -1954,10 +2070,10 @@ struct execute_damage_t : public warrior_attack_t
   {
     double am = warrior_attack_t::action_multiplier();
 
-    if ( last_resource_cost == 0 )  // If it was free, it's a full damage execute.
+    if ( cost_rage == 0 )  // If it was free, it's a full damage execute.
       am *= 2.0;
     else
-      am *= 2.0 * ( std::min( max_rage, last_resource_cost ) / max_rage );
+      am *= 2.0 * ( std::min( max_rage, cost_rage ) / max_rage );
     return am;
   }
 };
@@ -2023,14 +2139,31 @@ struct execute_arms_t : public warrior_attack_t
   {
     warrior_attack_t::execute();
 
-    trigger_attack->last_resource_cost = last_resource_cost;
+    trigger_attack->cost_rage = last_resource_cost;
     trigger_attack->execute();
-    p()->resource_gain( RESOURCE_RAGE, last_resource_cost * 0.3,
+    p()->resource_gain( RESOURCE_RAGE, last_resource_cost * 0.2,
                         p()->gain.execute_refund );  // Not worth the trouble to check if the target died.
 
     p()->buff.ayalas_stone_heart->expire();
     p()->buff.sudden_death->expire();
-    p()->buff.executioners_precision->trigger();
+
+    if ( p()->azerite.executioners_precision.ok() )
+    {
+      p()->buff.executioners_precision->trigger();
+    }
+  }
+
+  bool target_ready( player_t* candidate_target ) override
+  {
+    // Ayala's Stone Heart and Sudden Death allow execution on any target
+    bool always = p()->buff.ayalas_stone_heart->check() || p()->buff.sudden_death->check();
+
+    if ( ! always && candidate_target->health_percentage() > execute_pct )
+    {
+      return false;
+    }
+
+    return warrior_attack_t::target_ready( candidate_target );
   }
 
   bool ready() override
@@ -2039,46 +2172,56 @@ struct execute_arms_t : public warrior_attack_t
     {
       return false;
     }
-    if ( p()->buff.ayalas_stone_heart->check() )
-    {
-      return warrior_attack_t::ready();
-    }
-    if ( p()->buff.sudden_death->check() )
-    {
-      return warrior_attack_t::ready();
-    }
 
-    // Call warrior_attack_t::ready() first for proper targeting support.
-    if ( warrior_attack_t::ready() && target->health_percentage() <= execute_pct )
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
+    return warrior_attack_t::ready();
   }
 };
 
 // Fury Execute ======================================================================
 struct execute_main_hand_t : public warrior_attack_t
 {
-  execute_main_hand_t( warrior_t* p, const char* name, const spell_data_t* s ) : warrior_attack_t( name, p, s )
+  int aoe_targets;
+  execute_main_hand_t( warrior_t* p, const char* name, const spell_data_t* s )
+    : warrior_attack_t( name, p, s ),
+      aoe_targets( as<int>( p->spell.whirlwind_buff->effectN( 1 ).base_value() ) )
   {
     dual   = true;
     weapon = &( p->main_hand_weapon );
     base_multiplier *= 1.0 + p->spec.execute_2->effectN( 1 ).percent();
+    base_aoe_multiplier = p->spell.whirlwind_buff->effectN( 3 ).percent();
+  }
+
+  int n_targets() const override
+  {
+    if ( p()->buff.meat_cleaver->check() )
+    {
+      return aoe_targets + 1;
+    }
+    return warrior_attack_t::n_targets();
   }
 };
 
 struct execute_off_hand_t : public warrior_attack_t
 {
-  execute_off_hand_t( warrior_t* p, const char* name, const spell_data_t* s ) : warrior_attack_t( name, p, s )
+  int aoe_targets;
+  execute_off_hand_t( warrior_t* p, const char* name, const spell_data_t* s ) 
+    : warrior_attack_t( name, p, s ),
+      aoe_targets( as<int>( p->spell.whirlwind_buff->effectN( 1 ).base_value() ) )
   {
     dual     = true;
     may_miss = may_dodge = may_parry = may_block = false;
     weapon                                       = &( p->off_hand_weapon );
     base_multiplier *= 1.0 + p->spec.execute_2->effectN( 1 ).percent();
+    base_aoe_multiplier = p->spell.whirlwind_buff->effectN( 3 ).percent();
+  }
+
+  int n_targets() const override
+  {
+    if ( p()->buff.meat_cleaver->check() )
+    {
+      return aoe_targets + 1;
+    }
+    return warrior_attack_t::n_targets();
   }
 };
 
@@ -2113,8 +2256,22 @@ struct fury_execute_parent_t : public warrior_attack_t
       // If MH fails to land, or if there is no OH weapon for Fury, oh attack does not execute.
       oh_attack->execute();
 
+    p()->buff.meat_cleaver->decrement();
     p()->buff.sudden_death->expire();
     p()->buff.ayalas_stone_heart->expire();
+  }
+
+  bool target_ready( player_t* candidate_target ) override
+  {
+    // Ayala's Stone Heart and Sudden Death allow execution on any target
+    bool always = p()->buff.ayalas_stone_heart->check() || p()->buff.sudden_death->check();
+
+    if ( ! always && candidate_target->health_percentage() > execute_pct )
+    {
+      return false;
+    }
+
+    return warrior_attack_t::target_ready( candidate_target );
   }
 
   bool ready() override
@@ -2124,25 +2281,7 @@ struct fury_execute_parent_t : public warrior_attack_t
       return false;
     }
 
-    if ( p()->buff.ayalas_stone_heart->check() )
-    {
-      return warrior_attack_t::ready();
-    }
-
-    if ( p()->buff.sudden_death->check() )
-    {
-      return warrior_attack_t::ready();
-    }
-
-    // Call warrior_attack_t::ready() first for proper targeting support.
-    if ( warrior_attack_t::ready() && target->health_percentage() <= execute_pct )
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
+    return warrior_attack_t::ready();
   }
 };
 
@@ -2179,6 +2318,8 @@ struct heroic_throw_t : public warrior_attack_t
 
     weapon    = &( player->main_hand_weapon );
     may_dodge = may_parry = may_block = false;
+
+    cooldown -> duration *= 1.0 + p -> spec.prot_warrior -> effectN( 5 ).percent();
   }
 
   bool ready() override
@@ -2219,7 +2360,6 @@ struct heroic_leap_t : public warrior_attack_t
 
     cooldown->duration = data().charge_cooldown();  // Fixes bug in spelldata for now.
     cooldown->duration += p->talents.bounding_stride->effectN( 1 ).time_value();
-    cooldown->duration += p->artifact.leaping_giants.time_value();
   }
 
   timespan_t travel_time() const override
@@ -2344,6 +2484,43 @@ struct intervene_t : public warrior_attack_t
     }
 
     return warrior_attack_t::ready();
+  }
+};
+
+// Iron Fortress azerite trait ==============================================
+
+struct iron_fortress_t : public warrior_attack_t
+{
+  timespan_t internal_cd;
+  bool crit_blocked;
+
+  iron_fortress_t( warrior_t* p ) :
+    warrior_attack_t( "iron_fortress", p, p -> azerite.iron_fortress.spell() -> effectN( 1 ).trigger() ), // TODO: change to 279142 once it's pulled
+    internal_cd( p -> azerite.iron_fortress.spell() -> effectN( 1 ).trigger() -> internal_cooldown() ),
+    crit_blocked( false )
+  {
+    base_dd_min = base_dd_max = p -> azerite.iron_fortress.value( 1 );
+  }
+
+  double action_multiplier() const override
+  {
+    double am = warrior_attack_t::action_multiplier();
+
+    // If the hit was critically blocked, deals twice as much damage (no spelldata for it)
+    if ( crit_blocked )
+    {
+      am *= 2.0;
+    }
+
+    return am;
+  }
+
+  void do_execute( block_result_e b )
+  {
+    crit_blocked = b == BLOCK_RESULT_CRIT_BLOCKED;
+
+    warrior_attack_t::execute();
+    p() -> cooldown.iron_fortress_icd -> start( internal_cd );
   }
 };
 
@@ -2505,7 +2682,8 @@ struct raging_blow_attack_t : public warrior_attack_t
 {
   int aoe_targets;
   raging_blow_attack_t( warrior_t* p, const char* name, const spell_data_t* s )
-    : warrior_attack_t( name, p, s ), aoe_targets( p->spell.whirlwind_buff->effectN( 1 ).base_value() )
+    : warrior_attack_t( name, p, s ),
+    aoe_targets( as<int>( p->spell.whirlwind_buff->effectN( 1 ).base_value() ) )
   {
     may_miss = may_dodge = may_parry = may_block = false;
     dual                                         = true;
@@ -2571,6 +2749,11 @@ struct raging_blow_t : public warrior_attack_t
     }
     p()->buff.t20_fury_4p->trigger( 1 );
     p()->buff.meat_cleaver->decrement();
+
+    if ( p()->azerite.pulverizing_blows.ok() )
+    {
+      p()->buff.pulverizing_blows->trigger();
+    }
   }
 
   double recharge_multiplier() const override
@@ -2650,9 +2833,21 @@ struct sweeping_strikes_t : public warrior_spell_t
 
 // Overpower ============================================================
 
+struct seismic_wave_t : warrior_attack_t
+{
+  seismic_wave_t( warrior_t* p )
+    : warrior_attack_t( "seismic_wave", p, p->find_spell( 278497 ) )
+  {
+    aoe         = -1;
+    background  = true;
+    base_dd_min = base_dd_max = p->azerite.seismic_wave.value( 1 );
+  }
+};
 struct overpower_t : public warrior_attack_t
 {
-  overpower_t( warrior_t* p, const std::string& options_str ) : warrior_attack_t( "overpower", p, p->spec.overpower )
+  warrior_attack_t* seismic_wave;
+  overpower_t( warrior_t* p, const std::string& options_str )
+    : warrior_attack_t( "overpower", p, p->spec.overpower ), seismic_wave( nullptr )
   {
     parse_options( options_str );
     may_block = may_parry = may_dodge = false;
@@ -2660,16 +2855,49 @@ struct overpower_t : public warrior_attack_t
 
     if ( p->talents.dreadnaught->ok() )
     {
-      cooldown->charges += p->talents.dreadnaught->effectN( 1 ).base_value();
+      cooldown->charges += as<int>( p->talents.dreadnaught->effectN( 1 ).base_value() );
     }
     p->cooldown.charge = cooldown;
     p->active.charge   = this;
+
+    if ( p->azerite.seismic_wave.ok() )
+    {
+      seismic_wave = new seismic_wave_t( p );
+      add_child( seismic_wave );
+    }
+  }
+
+  double bonus_da( const action_state_t* s ) const override
+  {
+    double b = warrior_attack_t::bonus_da( s );
+    if ( p()->buff.striking_the_anvil->check() )
+    {
+      b += p()->buff.striking_the_anvil->value();
+    }
+    return b;
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    warrior_attack_t::impact( s );
+
+    if ( seismic_wave && result_is_hit( s->result ) )
+    {
+      seismic_wave->set_target( s->target );
+      seismic_wave->execute();
+    }
+    if ( p()->buff.striking_the_anvil->check() )
+    {
+      p()->cooldown.mortal_strike->adjust( - timespan_t::from_millis( 
+      p()->azerite.striking_the_anvil.spell()->effectN( 2 ).base_value() ) );
+    }
   }
 
   void execute() override
   {
     warrior_attack_t::execute();
     p()->buff.overpower->trigger();
+    p()->buff.striking_the_anvil->expire();
   }
 
   bool ready() override
@@ -2686,22 +2914,43 @@ struct overpower_t : public warrior_attack_t
 
 struct warbreaker_t : public warrior_attack_t
 {
+  bool lord_of_war;
+  double rage_from_lord_of_war;
   warbreaker_t( warrior_t* p, const std::string& options_str )
-    : warrior_attack_t( "warbreaker", p, p->talents.warbreaker )
+    : warrior_attack_t( "warbreaker", p, p->talents.warbreaker ),
+      lord_of_war( false ),
+      rage_from_lord_of_war(
+          //( p->azerite.lord_of_war.spell()->effectN( 1 ).base_value() * p->azerite.lord_of_war.n_items() ) / 10.0 )
+          ( p->azerite.lord_of_war.spell()->effectN( 1 ).base_value() ) / 10.0 ) // 8.1 no extra rage with rank
   {
     parse_options( options_str );
     weapon = &( p->main_hand_weapon );
     aoe    = -1;
   }
 
+  double bonus_da( const action_state_t* s ) const override
+  {
+    double b = warrior_attack_t::bonus_da( s );
+    b += p()->azerite.lord_of_war.value( 2 );
+    return b;
+  }
+
   void execute() override
   {
     warrior_attack_t::execute();
 
+    if ( p()->azerite.lord_of_war.ok() )
+    {
+      p()->resource_gain( RESOURCE_RAGE, rage_from_lord_of_war, p()->gain.lord_of_war );
+    }
+
     if ( hit_any_target )
     {
-      p()->buff.in_for_the_kill->trigger();
       p()->buff.war_veteran->trigger();
+      p()->buff.test_of_might_tracker->trigger();
+
+      if ( p()->talents.in_for_the_kill->ok() )
+        p()->buff.in_for_the_kill->trigger();
     }
   }
 
@@ -2716,52 +2965,26 @@ struct warbreaker_t : public warrior_attack_t
   }
 };
 
-// Neltharion's Fury =====================================================================================
-
-struct neltharions_fury_flame_t : public warrior_attack_t
-{
-  neltharions_fury_flame_t( warrior_t* p )
-    : warrior_attack_t( "neltharions_fury_shadowflame", p, p->artifact.neltharions_fury.data().effectN( 2 ).trigger() )
-  {
-    aoe       = -1;
-    may_block = may_parry = may_dodge = hasted_ticks = false;
-    dual = background = true;
-  }
-};
-
-struct neltharions_fury_t : public warrior_attack_t
-{
-  neltharions_fury_flame_t* flame;
-  neltharions_fury_t( warrior_t* p, const std::string& options_str )
-    : warrior_attack_t( "neltharions_fury", p, p->artifact.neltharions_fury ), flame( nullptr )
-  {
-    parse_options( options_str );
-    flame = new neltharions_fury_flame_t( p );
-    add_child( flame );
-    tick_action = flame;
-  }
-
-  void execute() override
-  {
-    warrior_attack_t::execute();
-    p()->buff.neltharions_fury->trigger();
-  }
-};
-
 // Rampage ================================================================
 
 struct rampage_attack_t : public warrior_attack_t
 {
   int aoe_targets;
-  bool first_attack, first_attack_missed, valarjar_berserking;
+  bool first_attack, first_attack_missed, valarjar_berserking, simmering_rage;
+//  double unbridled_chance; //unbridled ferocity azerite trait
   double rage_from_valarjar_berserking;
+  double rage_from_simmering_rage;
   rampage_attack_t( warrior_t* p, const spell_data_t* rampage, const std::string& name )
     : warrior_attack_t( name, p, rampage ),
-      aoe_targets( p->spell.whirlwind_buff->effectN( 1 ).base_value() ),
+      aoe_targets( as<int>( p->spell.whirlwind_buff->effectN( 1 ).base_value() ) ),
+//      unbridled_chance( p->azerite.unbridled_ferocity.spell()->effectN( 2 ).percent() ),
       first_attack( false ),
       first_attack_missed( false ),
       valarjar_berserking( false ),
-      rage_from_valarjar_berserking( p->find_spell( 248179 )->effectN( 1 ).base_value() / 10.0 )
+      simmering_rage( false ),
+      rage_from_valarjar_berserking( p->find_spell( 248179 )->effectN( 1 ).base_value() / 10.0 ),
+      rage_from_simmering_rage(
+          ( p->azerite.simmering_rage.spell()->effectN( 1 ).base_value() ) / 10.0 )
   {
     dual = true;
     if ( p->sets->has_set_bonus( WARRIOR_FURY, T21, B4 ) )
@@ -2795,6 +3018,10 @@ struct rampage_attack_t : public warrior_attack_t
       {
         p()->resource_gain( RESOURCE_RAGE, rage_from_valarjar_berserking, p()->gain.valarjar_berserking );
       }
+      if ( p()->azerite.simmering_rage.ok() && target == s->target )
+      {
+        p()->resource_gain( RESOURCE_RAGE, rage_from_simmering_rage, p()->gain.simmering_rage );
+      }
 
       if ( result_is_hit( s->result ) && p()->sets->has_set_bonus( WARRIOR_FURY, T21, B2 ) )
       {
@@ -2803,6 +3030,15 @@ struct rampage_attack_t : public warrior_attack_t
         residual_action::trigger( p()->active.slaughter, s->target, amount );
       }
     }
+  }
+
+  double bonus_da( const action_state_t* s ) const override
+  {
+    double b = warrior_attack_t::bonus_da( s );
+    b += p()->buff.pulverizing_blows->stack_value();
+    b += p()->azerite.simmering_rage.value( 2 );
+    b += p()->azerite.unbridled_ferocity.value( 2 );
+    return b;
   }
 
   int n_targets() const override
@@ -2866,13 +3102,17 @@ struct rampage_event_t : public event_t
     {
       warrior->rampage_driver = nullptr;
       warrior->buff.meat_cleaver->decrement();
+      warrior->buff.pulverizing_blows->expire();
+
     }
   }
 };
 
 struct rampage_parent_t : public warrior_attack_t
 {
-  rampage_parent_t( warrior_t* p, const std::string& options_str ) : warrior_attack_t( "rampage", p, p->spec.rampage )
+  double unbridled_chance;  // unbridled ferocity azerite trait
+  rampage_parent_t( warrior_t* p, const std::string& options_str ) : warrior_attack_t( "rampage", p, p->spec.rampage ),
+  unbridled_chance( p->find_spell( 288060 )->proc_chance() )
   {
     parse_options( options_str );
     for ( size_t i = 0; i < p->rampage_attacks.size(); i++ )
@@ -2890,6 +3130,21 @@ struct rampage_parent_t : public warrior_attack_t
     if ( p()->talents.frothing_berserker->ok() )
     {
       p()->buff.frothing_berserker->trigger();
+    }
+    if ( p()->azerite.trample_the_weak.ok() )
+    {
+      p()->buff.trample_the_weak->trigger();
+    }
+    if ( p()->azerite.unbridled_ferocity.ok() && rng().roll( unbridled_chance ) )
+    {
+      if ( p()->buff.recklessness->check() )
+      {
+        p()->buff.recklessness->extend_duration( p(), timespan_t::from_seconds( 4 ) );
+      }
+      else
+      {
+      p()->buff.recklessness->trigger( 1, buff_t::DEFAULT_VALUE(), 1.0, timespan_t::from_seconds( 4 ) );
+      }
     }
     p()->enrage();
     p()->rampage_driver = make_event<rampage_event_t>( *sim, p(), 0 );
@@ -2916,7 +3171,8 @@ struct ravager_tick_t : public warrior_attack_t
     aoe           = -1;
     impact_action = p->active.deep_wounds_ARMS;
     dual = ground_aoe = true;
-    attack_power_mod.direct *= 1.0 + p->spec.prot_warrior->effectN( 8 ).percent();  // 89% damage decrease for prot.
+    // Protection's Ravager deals less damage
+    attack_power_mod.direct *= 1.0 + p->spec.prot_warrior->effectN( 8 ).percent();
     rage_from_ravager = p->find_spell( 248439 )->effectN( 1 ).resource( RESOURCE_RAGE );
   }
 
@@ -2977,10 +3233,12 @@ struct ravager_t : public warrior_attack_t
     if ( d->current_tick <= 6 )
     {
       p()->buff.tornados_eye->trigger();
+      p()->buff.gathering_storm->trigger();
     }
     if ( d->current_tick == 7 )
     {
       p()->buff.tornados_eye->trigger( 0 );
+      p()->buff.gathering_storm->trigger( 0 );
     }
     warrior_attack_t::tick( d );
     ravager->execute();
@@ -3012,7 +3270,14 @@ struct revenge_t : public warrior_attack_t
     parse_options( options_str );
     aoe           = -1;
     impact_action = p->active.deep_wounds_PROT;
-    attack_power_mod.direct *= 1.0 + p->artifact.rage_of_the_fallen.percent();
+  }
+
+  double cost() const override
+  {
+    double cost = warrior_attack_t::cost();
+    cost *= 1.0 + p()->buff.revenge->check_value();
+    cost *= 1.0 + p()->buff.vengeance_revenge->check_value();
+    return cost;
   }
 
   void execute() override
@@ -3026,6 +3291,15 @@ struct revenge_t : public warrior_attack_t
       p()->cooldown.shield_slam->reset( true );
   }
 
+  void impact( action_state_t* state ) override
+  {
+    warrior_attack_t::impact( state );
+    if ( p() -> azerite.callous_reprisal.enabled() )
+    {
+      td( state -> target ) -> debuffs_callous_reprisal -> trigger();
+    }
+  }
+
   bool ready() override
   {
     if ( p()->main_hand_weapon.type == WEAPON_NONE )
@@ -3035,23 +3309,22 @@ struct revenge_t : public warrior_attack_t
     return warrior_attack_t::ready();
   }
 
+  double bonus_da( const action_state_t* s ) const override
+  {
+    double b = warrior_attack_t::bonus_da( s );
+    b += p()->azerite.callous_reprisal.value( 2 );
+    return b;
+  }
+
   double action_multiplier() const override
   {
     double am = warrior_attack_t::action_multiplier();
 
     am *= 1.0 + ( p()->talents.best_served_cold->effectN( 1 ).percent() *
                   std::min( target_list().size(),
-                            static_cast<size_t>( p()->talents.best_served_cold->effectN( 1 ).base_value() ) ) );
+                            static_cast<size_t>( p()->talents.best_served_cold->effectN( 2 ).base_value() ) ) );
 
     return am;
-  }
-
-  double cost() const override
-  {
-    double cost = warrior_attack_t::cost();
-    cost *= 1.0 + p()->buff.revenge->check_value();
-    cost *= 1.0 + p()->buff.vengeance_revenge->check_value();
-    return cost;
   }
 };
 
@@ -3090,36 +3363,12 @@ struct rend_t : public warrior_attack_t
 };
 
 // Shield Slam ==============================================================
-
-struct shield_block_hr_t : public warrior_attack_t
-{
-  double extension;
-  shield_block_hr_t( warrior_t* p )
-    : warrior_attack_t( "shield_block_heavy_repercussions", p, p->spec.shield_block ),
-      extension( p->talents.heavy_repercussions->effectN( 1 ).base_value() / 100.0 )
-  {
-    background                  = true;
-    base_costs[ RESOURCE_RAGE ] = 0;
-    cooldown->duration          = timespan_t::zero();
-  }
-
-  void execute() override
-  {
-    warrior_attack_t::execute();
-    p()->buff.shield_block->extend_duration( p(), timespan_t::from_seconds( extension ) );
-  }
-};
-
 struct shield_slam_t : public warrior_attack_t
 {
   double rage_gain;
-  attack_t* shield_block_hr;
-  double heavy_repercussions;
   shield_slam_t( warrior_t* p, const std::string& options_str )
     : warrior_attack_t( "shield_slam", p, p->spec.shield_slam ),
-      rage_gain( data().effectN( 3 ).resource( RESOURCE_RAGE ) ),
-      shield_block_hr( new shield_block_hr_t( p ) ),
-      heavy_repercussions( p->talents.heavy_repercussions->effectN( 2 ).percent() )
+      rage_gain( data().effectN( 3 ).resource( RESOURCE_RAGE ) )
   {
     parse_options( options_str );
     energize_type = ENERGIZE_NONE;
@@ -3129,26 +3378,28 @@ struct shield_slam_t : public warrior_attack_t
   {
     double am = warrior_attack_t::action_multiplier();
 
-    if ( p()->buff.shield_block->up() )
+    if ( p() -> buff.shield_block->up() )
     {
-      am *= 1.3 + heavy_repercussions;
+      double sb_increase = p() -> spell.shield_block_buff -> effectN( 2 ).percent();
+      sb_increase += p() -> talents.heavy_repercussions -> effectN( 2 ).percent();
+      am *= 1.0 + sb_increase;
     }
 
-    am *= 1.0 + p()->buff.bindings_of_kakushan->stack_value();
+    if ( p() -> talents.punish -> ok() )
+    {
+      am *= 1.0 + p() -> talents.punish -> effectN( 1 ).percent();
+    }
 
     return am;
   }
 
-  double composite_crit_chance() const override
+  double bonus_da( const action_state_t* state ) const override
   {
-    double cc = warrior_attack_t::composite_crit_chance();
+    double da = warrior_attack_t::bonus_da( state );
 
-    if ( p()->buff.shield_block->up() )
-    {
-      cc += p()->artifact.shatter_the_bones.percent();
-    }
+    da += p() -> buff.brace_for_impact -> stack() * p()->azerite.brace_for_impact.value(2);
 
-    return cc;
+    return da;
   }
 
   void execute() override
@@ -3157,32 +3408,33 @@ struct shield_slam_t : public warrior_attack_t
 
     if ( p()->buff.shield_block->up() && p()->talents.heavy_repercussions->ok() )
     {
-      shield_block_hr->execute();
+      p () -> buff.shield_block -> extend_duration( p(), 
+          timespan_t::from_seconds( p() -> talents.heavy_repercussions -> effectN( 1 ).percent() ) );
     }
-
-    if ( p()->buff.bindings_of_kakushan->check() )
-    {
-      p()->resource_gain(
-          RESOURCE_RAGE,
-          rage_gain * ( 1.0 + p()->buff.bindings_of_kakushan->check_value() ) *
-              ( 1.0 + ( p()->buff.demoralizing_shout->check() ? p()->artifact.might_of_the_vrykul.percent() : 0 ) ),
-          p()->gain.shield_slam );
-    }
-    else
-    {
-      p()->resource_gain(
-          RESOURCE_RAGE,
-          rage_gain *
-              ( 1.0 + ( p()->buff.demoralizing_shout->check() ? p()->artifact.might_of_the_vrykul.percent() : 0 ) ),
-          p()->gain.shield_slam );
-    }
-    p()->buff.bindings_of_kakushan->expire();
+    
+    p()->resource_gain( RESOURCE_RAGE, rage_gain, p() -> gain.shield_slam );
 
     if ( p()->sets->has_set_bonus( WARRIOR_PROTECTION, T20, B4 ) )
     {
       p()->cooldown.berserker_rage->adjust(
           timespan_t::from_seconds( -0.1 * p()->sets->set( WARRIOR_PROTECTION, T20, B4 )->effectN( 1 ).base_value() ),
           false );
+    }
+    if ( p() -> azerite.brace_for_impact.enabled() )
+    {
+      p() -> buff.brace_for_impact -> trigger();
+    }
+  }
+
+  void impact( action_state_t* state ) override
+  {
+    warrior_attack_t::impact( state );
+
+    warrior_td_t* td = p() -> get_target_data( state -> target );
+
+    if ( p() -> talents.punish -> ok() )
+    {
+      td -> debuffs_punish -> trigger();
     }
   }
 
@@ -3205,13 +3457,18 @@ struct slam_t : public warrior_attack_t
     : warrior_attack_t( "slam", p, p->spec.slam ), from_Fervor( false )
   {
     parse_options( options_str );
-    weapon = &( p->main_hand_weapon );
+    weapon                       = &( p->main_hand_weapon );
+    affected_by.crushing_assault = true;
   }
 
-  void execute() override
+  double bonus_da( const action_state_t* s ) const override
   {
-    warrior_attack_t::execute();
-    p()->buff.weighted_blade->expire();
+    double b = warrior_attack_t::bonus_da( s );
+    if ( p()->buff.crushing_assault->check() )
+    {
+      b += p()->buff.crushing_assault->value();
+    }
+    return b;
   }
 
   double action_multiplier() const override
@@ -3236,6 +3493,9 @@ struct slam_t : public warrior_attack_t
   {
     if ( from_Fervor )
       return 0;
+
+    if ( p()->buff.crushing_assault->check() && !from_Fervor )
+      return 0;
     return warrior_attack_t::cost();
   }
 
@@ -3244,6 +3504,12 @@ struct slam_t : public warrior_attack_t
     if ( from_Fervor )
       return 0;
     return warrior_attack_t::cost();
+  }
+
+  void execute() override
+  {
+    warrior_attack_t::execute();
+    p()->buff.weighted_blade->expire();
   }
 
   bool ready() override
@@ -3270,30 +3536,24 @@ struct slaughter_dot_t : public residual_action::residual_periodic_action_t<warr
 
 struct shockwave_t : public warrior_attack_t
 {
-  int rumbling_earth_reduction;
-  int rumbling_earth_targets_required;
   shockwave_t( warrior_t* p, const std::string& options_str )
-    : warrior_attack_t( "shockwave", p, p->spec.shockwave ),
-      rumbling_earth_reduction( p->talents.rumbling_earth->effectN( 2 ).base_value() ),
-      rumbling_earth_targets_required( p->talents.rumbling_earth->effectN( 1 ).base_value() )
+    : warrior_attack_t( "shockwave", p, p->spec.shockwave )
   {
     parse_options( options_str );
     may_dodge = may_parry = may_block = false;
     aoe                               = -1;
+    
+    base_multiplier *= 1.0 + p -> spec.prot_warrior -> effectN( 9 ).percent();
   }
 
-  void update_ready( timespan_t cd_duration ) override
+  void impact( action_state_t* state ) override
   {
-    cd_duration = cooldown->duration;
+    warrior_attack_t::impact( state );
 
-    if ( p()->talents.rumbling_earth->ok() && execute_state->n_targets >= rumbling_earth_targets_required )
+    if ( state -> n_targets >= as<size_t>( p() -> talents.rumbling_earth->effectN( 1 ).base_value() ) )
     {
-      if ( cd_duration > timespan_t::from_seconds( rumbling_earth_reduction ) )
-        cd_duration += timespan_t::from_seconds( -1 * rumbling_earth_reduction );
-      else
-        cd_duration = timespan_t::zero();
+      p() -> cooldown.shockwave -> adjust( timespan_t::from_seconds( p() -> talents.rumbling_earth -> effectN( 2 ).base_value() ) );
     }
-    warrior_attack_t::update_ready( cd_duration );
   }
 };
 
@@ -3332,7 +3592,6 @@ struct thunder_clap_t : public warrior_attack_t
     parse_options( options_str );
     aoe       = -1;
     may_dodge = may_parry = may_block = false;
-    attack_power_mod.direct *= 1.0 + p->artifact.thunder_crash.percent();
 
     radius *= 1.0 + p->talents.crackling_thunder->effectN( 1 ).percent();
     energize_type = ENERGIZE_NONE;
@@ -3342,9 +3601,24 @@ struct thunder_clap_t : public warrior_attack_t
   {
     double am = warrior_attack_t::action_multiplier();
 
-    am *= 1.0 + p()->buff.bindings_of_kakushan->stack_value();
+    if ( p() -> buff.avatar -> up() && p() -> talents.unstoppable_force -> ok() )
+    {
+      am *= 1.0 + p() -> talents.unstoppable_force -> effectN( 1 ).percent();
+    }
 
     return am;
+  }
+
+  double bonus_da( const action_state_t* s ) const override
+  {
+    double da = warrior_attack_t::bonus_da( s );
+
+    if ( p() -> azerite.deafening_crash.enabled() )
+    {
+      da += p() -> azerite.deafening_crash.value( 2 );
+    }
+
+    return da;
   }
 
   void execute() override
@@ -3356,26 +3630,27 @@ struct thunder_clap_t : public warrior_attack_t
       p()->cooldown.shield_slam->reset( true );
     }
 
-    p()->buff.neltharions_thunder->trigger( 1 );
+    p()->resource_gain( RESOURCE_RAGE, rage_gain, p() -> gain.thunder_clap );    
+  }
 
-    if ( p()->buff.bindings_of_kakushan->check() )
+  double recharge_multiplier() const override
+  {
+    double rm = warrior_attack_t::recharge_multiplier();
+    if ( p() -> buff.avatar -> up() && p() -> talents.unstoppable_force -> ok() )
     {
-      p()->resource_gain(
-          RESOURCE_RAGE,
-          rage_gain * ( 1.0 + p()->buff.bindings_of_kakushan->check_value() ) *
-              ( 1.0 + ( p()->buff.demoralizing_shout->check() ? p()->artifact.might_of_the_vrykul.percent() : 0 ) ),
-          p()->gain.thunder_clap );
+      rm *= 1.0 + ( p() -> talents.unstoppable_force -> effectN( 2 ).percent() );
     }
-    else
-    {
-      p()->resource_gain(
-          RESOURCE_RAGE,
-          rage_gain *
-              ( 1.0 + ( p()->buff.demoralizing_shout->check() ? p()->artifact.might_of_the_vrykul.percent() : 0 ) ),
-          p()->gain.thunder_clap );
-    }
+    return rm;
+  }
 
-    p()->buff.bindings_of_kakushan->expire();
+  void impact( action_state_t* state ) override
+  {
+    warrior_attack_t::impact( state );
+
+    if ( p() -> azerite.deafening_crash.enabled() && td( state -> target ) -> debuffs_demoralizing_shout -> up() )
+    {
+      td( state -> target ) -> debuffs_demoralizing_shout -> extend_duration( p(), timespan_t::from_millis( p() -> azerite.deafening_crash.spell() -> effectN( 1 ).base_value() ) );
+    }
   }
 };
 
@@ -3407,6 +3682,8 @@ struct victory_rush_t : public warrior_attack_t
       execute_action = victory_rush_heal;
     }
     cooldown->duration = timespan_t::from_seconds( 1000.0 );
+    // Prot's victory rush deals less damage
+    base_multiplier *= 1.0 + p -> spec.prot_warrior -> effectN( 9 ).percent();
   }
 };
 
@@ -3503,25 +3780,16 @@ struct fury_whirlwind_parent_t : public warrior_attack_t
   void execute() override
   {
     warrior_attack_t::execute();
-    const int num_available_targets = target_list().size();
+    const int num_available_targets = as<int>( target_list().size() );
 
-    double recklessness_bonus = 1.0;
-    if ( p()->buff.recklessness->check() )
-    {
-      recklessness_bonus += p()->spec.recklessness->effectN( 4 ).percent();
-    }
-
-    p()->resource_gain(
-        RESOURCE_RAGE,
-        ( base_rage_gain + additional_rage_gain_per_target * num_available_targets ) * recklessness_bonus,
-        p()->gain.whirlwind );
+    p()->resource_gain( RESOURCE_RAGE, ( base_rage_gain + additional_rage_gain_per_target * num_available_targets ),
+                        p()->gain.whirlwind );
 
     if ( p()->talents.meat_cleaver->ok() )
     {
       p()->resource_gain( RESOURCE_RAGE,
                           std::min( p()->talents.meat_cleaver->effectN( 2 ).base_value(),
-                                    p()->talents.meat_cleaver->effectN( 1 ).base_value() * num_available_targets ) *
-                              recklessness_bonus,
+                                    p()->talents.meat_cleaver->effectN( 1 ).base_value() * num_available_targets ),
                           p()->gain.meat_cleaver );
     }
     if ( p()->talents.meat_cleaver->ok() )
@@ -3627,8 +3895,9 @@ struct arms_whirlwind_parent_t : public warrior_attack_t
 
     if ( p->talents.fervor_of_battle->ok() )
     {
-      fervor_slam              = new slam_t( p, options_str );
-      fervor_slam->from_Fervor = true;
+      fervor_slam                               = new slam_t( p, options_str );
+      fervor_slam->from_Fervor                  = true;
+      fervor_slam->affected_by.crushing_assault = true;
     }
 
     if ( p->main_hand_weapon.type != WEAPON_NONE )
@@ -3657,6 +3926,13 @@ struct arms_whirlwind_parent_t : public warrior_attack_t
     }
 
     return dot_duration;
+  }
+
+  double cost() const override
+  {
+    if ( p()->talents.fervor_of_battle->ok() && p()->buff.crushing_assault->check() )
+      return 10;
+    return warrior_attack_t::cost();
   }
 
   void tick( dot_t* d ) override
@@ -3703,7 +3979,8 @@ struct arms_whirlwind_parent_t : public warrior_attack_t
 
 struct avatar_t : public warrior_spell_t
 {
-  avatar_t( warrior_t* p, const std::string& options_str ) : warrior_spell_t( "avatar", p, p->talents.avatar )
+  avatar_t( warrior_t* p, const std::string& options_str ) :
+    warrior_spell_t( "avatar", p, p -> specialization() == WARRIOR_PROTECTION ? p -> spec.avatar : p -> talents.avatar )
   {
     parse_options( options_str );
     callbacks = false;
@@ -3714,11 +3991,20 @@ struct avatar_t : public warrior_spell_t
     warrior_spell_t::execute();
 
     p()->buff.avatar->trigger();
+
+    if ( p()->azerite.bastion_of_might.enabled() )
+    {
+      p()->buff.bastion_of_might->trigger();
+
+      // TODO: check if Arms warriors get an ignore pain too
+      if ( p() -> specialization() == WARRIOR_PROTECTION )
+        p() -> active.bastion_of_might_ip -> execute( );
+    }
   }
 
   bool verify_actor_spec() const override
   {
-    if ( p()->talents.avatar->ok() )
+    if ( p()->talents.avatar->ok() && p() -> specialization() == WARRIOR_ARMS )
     {
       // Do not check spec if Arms talent avatar is available, so that spec check on the spell (required: protection)
       // does not fail.
@@ -3933,6 +4219,7 @@ struct last_stand_t : public warrior_spell_t
     range              = -1;
     cooldown->duration = data().cooldown();
     cooldown->duration *= 1.0 + p->sets->set( WARRIOR_PROTECTION, T18, B2 )->effectN( 1 ).percent();
+    cooldown -> duration += timespan_t::from_millis( p -> talents.bolster -> effectN( 1 ).base_value() );
   }
 
   void execute() override
@@ -3973,6 +4260,8 @@ struct recklessness_t : public warrior_spell_t
     bonus_crit = data().effectN( 1 ).percent();
     callbacks  = false;
 
+    harmful = false;
+
     if ( p->talents.reckless_abandon->ok() )
     {
       energize_amount   = p->talents.reckless_abandon->effectN( 2 ).base_value() / 10.0;
@@ -3985,7 +4274,7 @@ struct recklessness_t : public warrior_spell_t
   {
     warrior_spell_t::execute();
 
-    p()->buff.recklessness->trigger( 1, bonus_crit );
+    p()->buff.recklessness->trigger();
   }
 };
 
@@ -4002,63 +4291,46 @@ struct ignore_pain_buff_t : public absorb_buff_t
   // Custom consume implementation to allow minimum absorb amount.
   double consume( double amount ) override
   {
-    // 20161103 (stangk) - Statistics should track the reduced amount
-    amount *= 0.9;
+    // IP only absorbs up to 50% of the damage taken
+    amount *= debug_cast< warrior_t* >( player ) -> spec.ignore_pain -> effectN( 2 ).percent();
+    double absorbed = absorb_buff_t::consume( amount );
 
-    // Limit the consumption to the current size of the buff.
-    amount = std::min( amount, current_value );
-
-    if ( absorb_source )
-    {
-      absorb_source->add_result( amount, 0, ABSORB, RESULT_HIT, BLOCK_RESULT_UNBLOCKED, player );
-    }
-
-    if ( absorb_gain )
-    {
-      absorb_gain->add( RESOURCE_HEALTH, amount, 0 );
-    }
-
-    if ( sim->debug )
-    {
-      sim->out_debug.printf( "%s %s absorbs %.2f (remaining: %.2f)", player->name(), name(), amount, current_value );
-    }
-
-    // 20161103 (stangk) - Since we don't call base, we need to deduct from current_value here
-    // or we get an infinite shield
-    current_value -= amount;
-
-    absorb_used( amount );
-
-    return amount;
+    return absorbed;
   }
 };
 
 struct ignore_pain_t : public warrior_spell_t
 {
-  double ip_cap_ratio;
   ignore_pain_t( warrior_t* p, const std::string& options_str )
-    : warrior_spell_t( "ignore_pain", p, p->spec.ignore_pain ), ip_cap_ratio( 0 )
+    : warrior_spell_t( "ignore_pain", p, p->spec.ignore_pain )
   {
     parse_options( options_str );
     may_crit     = false;
     range        = -1;
     target       = player;
-    ip_cap_ratio = 3;
-    if ( p->talents.never_surrender->ok() )
-    {
-      ip_cap_ratio *= 1.0 + p->talents.never_surrender->effectN( 1 ).percent();
-      sim->errorf(
-          "In sim, never surrender is modeled by selecting a number based on a gaussian distrubution with a mean of 70 "
-          "percent health" );
-      sim->errorf(
-          "and a range of 40-100 percent everytime ignore pain is cast. In the future, this will be user selectable." );
-    }
-    if ( p->talents.indomitable->ok() )
-    {
-      ip_cap_ratio *= 1.0 + p->talents.indomitable->effectN( 1 )
-                                .percent();  // basic support to fix segfault, prot will need full future overhaul
-    }
+
     base_dd_max = base_dd_min = 0;
+  }
+
+  double bonus_da( const action_state_t* state ) const override
+  {
+    double da = warrior_spell_t::bonus_da( state );
+
+    if ( p() -> azerite.bloodsport.enabled() )
+    {
+      da += p() -> azerite.bloodsport.value( 3 );
+    }
+
+    return da;
+  }
+
+  double cost() const override
+  {
+    double c = warrior_spell_t::cost();
+
+    c *= 1.0 + p() -> buff.vengeance_ignore_pain -> value();
+
+    return c;
   }
 
   void execute() override
@@ -4066,58 +4338,44 @@ struct ignore_pain_t : public warrior_spell_t
     warrior_spell_t::execute();
     p()->buff.vengeance_ignore_pain->expire();
     p()->buff.vengeance_revenge->trigger();
-    p()->buff.dragon_scales->expire();
-  }
-
-  double cost() const override
-  {
-    return std::min( 60.0 * ( 1.0 + p()->buff.vengeance_ignore_pain->check_value() ),
-                     std::max( p()->resources.current[ RESOURCE_RAGE ],
-                               20.0 * ( 1.0 + p()->buff.vengeance_ignore_pain->check_value() ) ) );
-  }
-
-  double tactician_cost() const override
-  {
-    return cost() / ( 1.0 + p()->buff.vengeance_ignore_pain->check_value() );
-  }
-
-  double max_ip() const
-  {
-    double ip_cap = 0;
-    ip_cap        = ip_cap_ratio *
-             ( data().effectN( 1 ).ap_coeff() * p()->composite_melee_attack_power() *
-               p()->composite_attack_power_multiplier() ) *
-             ( 1.0 + p()->cache.damage_versatility() );
-    ip_cap *= 1.0 + p()->buff.dragon_scales->check_value();
-    return ip_cap;
+    if ( p() -> azerite.bloodsport.enabled() )
+    {
+      p() -> buff.bloodsport -> trigger();
+    }
   }
 
   void impact( action_state_t* s ) override
   {
-    double amount;
+    double new_ip = s -> result_amount;
 
-    amount = s->result_amount;
-    // 20161103 - resource_consumed is only updated after this function is called
-    amount *= ( cost() / ( 60.0 * ( 1.0 + p()->buff.vengeance_ignore_pain->check_value() ) ) );
+    if ( p() -> talents.never_surrender -> ok() )
+    { 
+      double percent_health;
+      if ( p() -> never_surrender_percentage < 0 )
+      {
+        percent_health = p() -> health_percentage() / 100;
+      }
+      else
+      {
+        percent_health = ( rng().gauss( p() -> never_surrender_percentage / 100, 0.2 ) );
+      }
 
-    if ( p()->talents.never_surrender->ok() )
-    {  // TODO, add options to change the gaussian distribution.
-      double percent_health = ( 1 - rng().gauss( 0.7, 0.3 ) * p()->talents.never_surrender->effectN( 1 ).percent() );
-      amount *= 1.0 + percent_health;
+      new_ip *= 1.0 + percent_health * p() -> talents.never_surrender -> effectN( 1 ).percent();
     }
 
-    amount *= 1.0 + p()->buff.dragon_scales->check_value();
-    amount *= 1.0 + p()->artifact.dragon_skin.percent();
-    amount += p()->buff.ignore_pain->current_value;
+    double previous_ip = p() -> buff.ignore_pain -> current_value;
 
-    if ( amount > max_ip() )
+    // IP is capped at 1.3 times the amount of the current IP
+    double ip_cap_ratio = 1.3;
+
+    if ( previous_ip + new_ip > new_ip * ip_cap_ratio )
     {
-      amount = max_ip();
+      new_ip *= ip_cap_ratio;
     }
 
-    if ( amount > 0.0 )
+    if ( new_ip > 0.0 )
     {
-      p()->buff.ignore_pain->trigger( 1, amount );
+      p()->buff.ignore_pain->trigger( 1, new_ip );
     }
   }
 
@@ -4130,6 +4388,30 @@ struct ignore_pain_t : public warrior_spell_t
   }
 };
 
+// A free Ignore Pain from Bastion of Might when Avatar is cast
+struct ignore_pain_bom_t : public ignore_pain_t
+{
+  ignore_pain_bom_t( warrior_t* p )
+    : ignore_pain_t( p, "" )
+  {
+    may_crit     = false;
+    range        = -1;
+    target       = player;
+  }
+
+  void execute() override
+  {
+    warrior_spell_t::execute();
+    p()->buff.vengeance_revenge->trigger(); // this IP does trigger vengeance but doesnt consume it
+  }
+
+  double cost( ) const override
+  {
+    return 0.0;
+  }
+
+};
+
 // Shield Block =============================================================
 
 struct shield_block_t : public warrior_spell_t
@@ -4138,9 +4420,8 @@ struct shield_block_t : public warrior_spell_t
     : warrior_spell_t( "shield_block", p, p->spec.shield_block )
   {
     parse_options( options_str );
-    use_off_gcd      = true;
     cooldown->hasted = true;
-    cooldown->charges += p->spec.shield_block_2->effectN( 1 ).base_value();
+    cooldown->charges += as<int>( p->spec.shield_block_2->effectN( 1 ).base_value() );
   }
 
   void execute() override
@@ -4347,8 +4628,6 @@ action_t* warrior_t::create_action( const std::string& name, const std::string& 
     return new ignore_pain_t( this, options_str );
   if ( name == "intercept" )
     return new intercept_t( this, options_str );
-  if ( name == "neltharions_fury" )
-    return new neltharions_fury_t( this, options_str );
   if ( name == "whirlwind" )
   {
     if ( specialization() == WARRIOR_FURY )
@@ -4409,7 +4688,6 @@ void warrior_t::init_spells()
   spec.recklessness     = find_specialization_spell( "Recklessness" );
   spec.revenge          = find_specialization_spell( "Revenge" );
   spec.revenge_trigger  = find_specialization_spell( "Revenge Trigger" );
-  spec.riposte          = find_specialization_spell( "Riposte" );
   spec.seasoned_soldier = find_specialization_spell( "Seasoned Soldier" );
   spec.shield_block     = find_specialization_spell( "Shield Block" );
   spec.shield_block_2   = find_specialization_spell( 231847 );
@@ -4423,6 +4701,9 @@ void warrior_t::init_spells()
   spec.tactician        = find_specialization_spell( "Tactician" );
   spec.thunder_clap     = find_specialization_spell( "Thunder Clap" );
   spec.victory_rush     = find_specialization_spell( "Victory Rush" );
+  // Only for Protection, the arms talent is under talents.avatar
+  spec.avatar           = find_specialization_spell( "Avatar" );
+  spec.vanguard         = find_specialization_spell( "Vanguard" );
   if ( specialization() == WARRIOR_FURY )
   {
     spec.whirlwind   = find_specialization_spell( 190411 );
@@ -4438,9 +4719,11 @@ void warrior_t::init_spells()
 
   // Talents
   talents.anger_management    = find_talent_spell( "Anger Management" );
+  // Only for Arms, the Protection baseline spell is under spec.avatar
   talents.avatar              = find_talent_spell( "Avatar" );
   talents.best_served_cold    = find_talent_spell( "Best Served Cold" );
   talents.bladestorm          = find_talent_spell( "Bladestorm" );
+  talents.bolster             = find_talent_spell( "Bolster" );
   talents.booming_voice       = find_talent_spell( "Booming Voice" );
   talents.bounding_stride     = find_talent_spell( "Bounding Stride" );
   talents.carnage             = find_talent_spell( "Carnage" );
@@ -4460,61 +4743,43 @@ void warrior_t::init_spells()
   talents.furious_charge      = find_talent_spell( "Furious Charge" );
   talents.furious_slash       = find_talent_spell( "Furious Slash" );
   talents.heavy_repercussions = find_talent_spell( "Heavy Repercussions" );
+  talents.impending_victory   = find_talent_spell( "Impending Victory" );
   talents.in_for_the_kill     = find_talent_spell( "In For The Kill" );
   talents.indomitable         = find_talent_spell( "Indomitable" );
   talents.inner_rage          = find_talent_spell( "Inner Rage" );
   talents.into_the_fray       = find_talent_spell( "Into the Fray" );
   talents.massacre            = find_talent_spell( "Massacre" );
   talents.meat_cleaver        = find_talent_spell( "Meat Cleaver" );
+  talents.menace              = find_talent_spell( "Menace" );
   talents.never_surrender     = find_talent_spell( "Never Surrender" );
+  talents.punish              = find_talent_spell( "Punish" );
   talents.ravager             = find_talent_spell( "Ravager" );
   talents.reckless_abandon    = find_talent_spell( "Reckless Abandon" );
   talents.rend                = find_talent_spell( "Rend" );
   talents.rumbling_earth      = find_talent_spell( "Rumbling Earth" );
+  talents.safeguard           = find_talent_spell( "Safeguard" );
   talents.second_wind         = find_talent_spell( "Second Wind" );
   talents.siegebreaker        = find_talent_spell( "Siegebreaker" );
   talents.skullsplitter       = find_talent_spell( "Skullsplitter" );
   talents.storm_bolt          = find_talent_spell( "Storm Bolt" );
   talents.sudden_death        = find_talent_spell( "Sudden Death" );
+  talents.unstoppable_force   = find_talent_spell( "Unstoppable Force" );
   talents.vengeance           = find_talent_spell( "Vengeance" );
   talents.war_machine         = find_talent_spell( "War Machine" );
   talents.warbreaker          = find_talent_spell( "Warbreaker" );
   talents.warpaint            = find_talent_spell( "Warpaint" );
-
-  // Artifact
-  artifact.dragon_scales                = find_artifact_spell( "Dragon Scales" );
-  artifact.dragon_skin                  = find_artifact_spell( "Dragon Skin" );
-  artifact.intolerance                  = find_artifact_spell( "Intolerance" );
-  artifact.leaping_giants               = find_artifact_spell( "Leaping Giants" );
-  artifact.might_of_the_vrykul          = find_artifact_spell( "Might of the Vrykul" );
-  artifact.neltharions_fury             = find_artifact_spell( "Neltharion's Fury" );
-  artifact.rage_of_the_fallen           = find_artifact_spell( "Rage of the Fallen" );
-  artifact.reflective_plating           = find_artifact_spell( "Reflective Plating" );
-  artifact.rumbling_voice               = find_artifact_spell( "Rumbling Voice" );
-  artifact.scales_of_earth              = find_artifact_spell( "Scales of Earth" );
-  artifact.shatter_the_bones            = find_artifact_spell( "Shatter the Bones" );
-  artifact.strength_of_the_earth_aspect = find_artifact_spell( "Strength of the Earth Aspect" );
-  artifact.thunder_crash                = find_artifact_spell( "Thunder Crash" );
-  artifact.toughness                    = find_artifact_spell( "Toughness" );
-  artifact.vrykul_shield_training       = find_artifact_spell( "Vrykul Shield Training" );
-  artifact.wall_of_steel                = find_artifact_spell( "Wall of Steel" );
-  artifact.will_to_survive              = find_artifact_spell( "Will to Survive" );
-  artifact.protection_of_the_valarjar   = find_artifact_spell( "Protection of the Valajar" );
-  artifact.bastion_of_the_aspects       = find_artifact_spell( "Bastion of the Aspects" );
-  artifact.gleaming_scales              = find_artifact_spell( "Gleaming Scales" );
-  artifact.neltharions_thunder          = find_artifact_spell( "Neltarion's Thunder" );
 
   // All
   azerite.breach           = find_azerite_spell( "Breach" );
   azerite.moment_of_glory  = find_azerite_spell( "Moment of Glory" );
   azerite.bury_the_hatchet = find_azerite_spell( "Bury the Hatchet" );
   // Prot
-  azerite.reinforced_plating = find_azerite_spell( "Reinforced Plating" );
   azerite.iron_fortress      = find_azerite_spell( "Iron Fortress" );
   azerite.deafening_crash    = find_azerite_spell( "Deafening Crash" );
   azerite.callous_reprisal   = find_azerite_spell( "Callous Reprisal" );
   azerite.brace_for_impact   = find_azerite_spell( "Brace for Impact" );
   azerite.bloodsport         = find_azerite_spell( "Bloodsport" );
+  azerite.bastion_of_might   = find_azerite_spell( "Bastion of Might" );
   // Arms
   azerite.test_of_might          = find_azerite_spell( "Test of Might" );
   azerite.seismic_wave           = find_azerite_spell( "Seismic Wave" );
@@ -4522,6 +4787,7 @@ void warrior_t::init_spells()
   azerite.gathering_storm        = find_azerite_spell( "Gathering Storm" );
   azerite.executioners_precision = find_azerite_spell( "Executioner's Precision" );
   azerite.crushing_assault       = find_azerite_spell( "Crushing Assault" );
+  azerite.striking_the_anvil     = find_azerite_spell( "Striking the Anvil" );
   // Fury
   azerite.trample_the_weak  = find_azerite_spell( "Trample the Weak" );
   azerite.simmering_rage    = find_azerite_spell( "Simmering Rage" );
@@ -4529,16 +4795,22 @@ void warrior_t::init_spells()
   azerite.pulverizing_blows = find_azerite_spell( "Pulverizing Blows" );
   azerite.infinite_fury     = find_azerite_spell( "Infinite fury" );
   azerite.bloodcraze        = find_azerite_spell( "Bloodcraze" );
+  azerite.cold_steel_hot_blood   = find_azerite_spell( "Cold Steel, Hot Blood" );
+  azerite.unbridled_ferocity     = find_azerite_spell( "Unbridled Ferocity" );
 
   // Generic spells
-  spell.battle_shout           = find_class_spell( "Battle Shout" );
-  spell.charge                 = find_class_spell( "Charge" );
-  spell.colossus_smash_debuff  = find_spell( 208086 );
-  spell.intervene              = find_spell( 147833 );
-  spell.headlong_rush          = find_spell( 137047 );  // Also may be used for other crap in the future.
-  spell.heroic_leap            = find_class_spell( "Heroic Leap" );
-  spell.siegebreaker_debuff    = find_spell( 280773 );
-  spell.whirlwind_buff         = find_spell( 85739, WARRIOR_FURY );  // Used to be called Meat Cleaver
+  spell.battle_shout          = find_class_spell( "Battle Shout" );
+  spell.charge                = find_class_spell( "Charge" );
+  spell.colossus_smash_debuff = find_spell( 208086 );
+  spell.intervene             = find_spell( 147833 );
+  spell.headlong_rush         = find_spell( 137047 );  // Also may be used for other crap in the future.
+  spell.heroic_leap           = find_class_spell( "Heroic Leap" );
+  spell.siegebreaker_debuff   = find_spell( 280773 );
+  spell.whirlwind_buff        = find_spell( 85739, WARRIOR_FURY );  // Used to be called Meat Cleaver
+  spell.ravager_protection    = find_spell( 227744 );
+  spell.shield_block_buff     = find_spell( 132404 );
+  spell.riposte               = find_class_spell( "Riposte" );
+
 
   // Active spells
   active.deep_wounds_ARMS = nullptr;
@@ -4552,8 +4824,6 @@ void warrior_t::init_spells()
     active.deep_wounds_ARMS = new deep_wounds_ARMS_t( this );
   if ( spec.deep_wounds_PROT->ok() )
     active.deep_wounds_PROT = new deep_wounds_PROT_t( this );
-  if ( artifact.scales_of_earth.rank() )
-    active.scales_of_earth = new scales_of_earth_t( this );
   if ( sets->has_set_bonus( WARRIOR_FURY, T21, B2 ) )
     active.slaughter = new slaughter_dot_t( this );
   if ( spec.rampage->ok() )
@@ -4575,6 +4845,14 @@ void warrior_t::init_spells()
     this->rampage_attacks.push_back( third );
     this->rampage_attacks.push_back( fourth );
   }
+  if ( azerite.iron_fortress.enabled() )
+  {
+    active.iron_fortress = new iron_fortress_t( this );
+  }
+  if ( azerite.bastion_of_might.enabled() && specialization() == WARRIOR_PROTECTION )
+  {
+    active.bastion_of_might_ip = new ignore_pain_bom_t( this );
+  }
 
   // Cooldowns
   cooldown.avatar         = get_cooldown( "avatar" );
@@ -4583,30 +4861,33 @@ void warrior_t::init_spells()
   cooldown.bladestorm     = get_cooldown( "bladestorm" );
   cooldown.bloodthirst    = get_cooldown( "bloodthirst" );
 
-  cooldown.charge                         = get_cooldown( "charge" );
-  cooldown.colossus_smash                 = get_cooldown( "colossus_smash" );
-  cooldown.deadly_calm                    = get_cooldown( "deadly_calm" );
-  cooldown.demoralizing_shout             = get_cooldown( "demoralizing_shout" );
-  cooldown.dragon_roar                    = get_cooldown( "dragon_roar" );
-  cooldown.enraged_regeneration           = get_cooldown( "enraged_regeneration" );
-  cooldown.execute                        = get_cooldown( "execute" );
-  cooldown.heroic_leap                    = get_cooldown( "heroic_leap" );
-  cooldown.last_stand                     = get_cooldown( "last_stand" );
-  cooldown.mortal_strike                  = get_cooldown( "mortal_strike" );
-  cooldown.overpower                      = get_cooldown( "overpower" );
-  cooldown.rage_from_crit_block           = get_cooldown( "rage_from_crit_block" );
-  cooldown.rage_from_crit_block->duration = timespan_t::from_seconds( 3.0 );
-  cooldown.raging_blow                    = get_cooldown( "raging_blow" );
-  cooldown.ravager                        = get_cooldown( "ravager" );
-  cooldown.revenge_reset                  = get_cooldown( "revenge_reset" );
-  cooldown.revenge_reset->duration        = spec.revenge_trigger->internal_cooldown();
-  cooldown.shield_slam                    = get_cooldown( "shield_slam" );
-  cooldown.shield_wall                    = get_cooldown( "shield_wall" );
-  cooldown.siegebreaker                   = get_cooldown( "siegebreaker" );
-  cooldown.skullsplitter                  = get_cooldown( "skullsplitter" );
-  cooldown.shockwave                      = get_cooldown( "shockwave" );
-  cooldown.storm_bolt                     = get_cooldown( "storm_bolt" );
-  cooldown.warbreaker                     = get_cooldown( "warbreaker" );
+  cooldown.charge                           = get_cooldown( "charge" );
+  cooldown.colossus_smash                   = get_cooldown( "colossus_smash" );
+  cooldown.deadly_calm                      = get_cooldown( "deadly_calm" );
+  cooldown.demoralizing_shout               = get_cooldown( "demoralizing_shout" );
+  cooldown.dragon_roar                      = get_cooldown( "dragon_roar" );
+  cooldown.enraged_regeneration             = get_cooldown( "enraged_regeneration" );
+  cooldown.execute                          = get_cooldown( "execute" );
+  cooldown.heroic_leap                      = get_cooldown( "heroic_leap" );
+  cooldown.iron_fortress_icd                = get_cooldown( "iron_fortress" );
+  cooldown.last_stand                       = get_cooldown( "last_stand" );
+  cooldown.mortal_strike                    = get_cooldown( "mortal_strike" );
+  cooldown.overpower                        = get_cooldown( "overpower" );
+  cooldown.rage_from_auto_attack            = get_cooldown( "rage_from_auto_attack" );
+  cooldown.rage_from_auto_attack->duration  = timespan_t::from_seconds ( 1.0 );
+  cooldown.rage_from_crit_block             = get_cooldown( "rage_from_crit_block" );
+  cooldown.rage_from_crit_block->duration   = timespan_t::from_seconds( 3.0 );
+  cooldown.raging_blow                      = get_cooldown( "raging_blow" );
+  cooldown.ravager                          = get_cooldown( "ravager" );
+  cooldown.revenge_reset                    = get_cooldown( "revenge_reset" );
+  cooldown.revenge_reset->duration          = spec.revenge_trigger->internal_cooldown();
+  cooldown.shield_slam                      = get_cooldown( "shield_slam" );
+  cooldown.shield_wall                      = get_cooldown( "shield_wall" );
+  cooldown.siegebreaker                     = get_cooldown( "siegebreaker" );
+  cooldown.skullsplitter                    = get_cooldown( "skullsplitter" );
+  cooldown.shockwave                        = get_cooldown( "shockwave" );
+  cooldown.storm_bolt                       = get_cooldown( "storm_bolt" );
+  cooldown.warbreaker                       = get_cooldown( "warbreaker" );
 }
 
 // warrior_t::init_base =====================================================
@@ -4638,7 +4919,6 @@ void warrior_t::init_base_stats()
     {
       double totalweight         = 0;
       double avg_weighted_ilevel = 0;
-      double average_itemlevel   = 0;
       size_t divisor             = 0;
       for ( size_t i = 0; i < items.size(); i++ )
       {
@@ -4672,15 +4952,20 @@ void warrior_t::init_base_stats()
         avg_weighted_ilevel += ( ratio * static_cast<double>( items[ i ].item_level() ) / totalweight * divisor );
       }
 
-      average_itemlevel = avg_weighted_ilevel / divisor;
 
-      const auto& data = dbc.random_property( static_cast<int>( average_itemlevel ) );
+      int average_itemlevel = static_cast<int>( divisor ? avg_weighted_ilevel / divisor : 0.0 );
 
-      expected_max_health = data.p_epic[ 0 ] * 8.484262;
-      expected_max_health += base.stats.attribute[ ATTR_STAMINA ];
-      expected_max_health *= 1.0 + matching_gear_multiplier( ATTR_STAMINA );
-      expected_max_health *= 1.0 + artifact.toughness.percent();
-      expected_max_health *= 60;
+      if (average_itemlevel > 0 )
+      {
+
+        const auto& data = dbc.random_property( static_cast<int>( average_itemlevel ) );
+
+        expected_max_health = data.p_epic[ 0 ] * 8.484262;
+        expected_max_health += base.stats.attribute[ ATTR_STAMINA ];
+        expected_max_health *= 1.0 + matching_gear_multiplier( ATTR_STAMINA );
+        expected_max_health *= 60;
+
+      }
     }
   }
 }
@@ -4745,6 +5030,11 @@ void warrior_t::default_apl_dps_precombat()
   precombat->add_action( "snapshot_stats", "Snapshot raid buffed stats before combat begins and pre-potting is done." );
 
   precombat->add_action( "potion" );
+  
+  if ( specialization() == WARRIOR_FURY )
+  {
+    precombat->add_action( this, "Recklessness", "if=!talent.furious_slash.enabled&!talent.reckless_abandon.enabled" );
+  }
 }
 
 // Fury Warrior Action Priority List ========================================
@@ -4754,7 +5044,6 @@ void warrior_t::apl_fury()
   std::vector<std::string> racial_actions = get_racial_actions();
 
   default_apl_dps_precombat();
-
   action_priority_list_t* default_list  = get_action_priority_list( "default" );
   action_priority_list_t* movement      = get_action_priority_list( "movement" );
   action_priority_list_t* single_target = get_action_priority_list( "single_target" );
@@ -4775,18 +5064,17 @@ void warrior_t::apl_fury()
   default_list->add_talent( this, "Furious Slash",
                             "if=talent.furious_slash.enabled&(buff.furious_slash.stack<3|buff.furious_slash.remains<3|("
                             "cooldown.recklessness.remains<3&buff.furious_slash.remains<9))" );
-  default_list->add_action( this, "Bloodthirst",
-                            "if=equipped.kazzalax_fujiedas_fury&(buff.fujiedas_fury.down|remains<2)" );
   default_list->add_action( this, "Rampage", "if=cooldown.recklessness.remains<3" );
-  default_list->add_action( this, "Recklessness" );
+  default_list->add_action( this, "Recklessness", "if=!talent.siegebreaker.enabled|(cooldown.siegebreaker.remains<1|"
+                            "cooldown.siegebreaker.remains>5)" );
   default_list->add_action( this, "Whirlwind", "if=spell_targets.whirlwind>1&!buff.meat_cleaver.up" );
 
   for ( size_t i = 0; i < items.size(); i++ )
   {
-    if ( items[ i ].name_str == "ring_of_collapsing_futures" )
+    if ( items[ i ].name_str == "grongs_primal_rage" )
     {
       default_list->add_action( "use_item,name=" + items[ i ].name_str +
-                                ",if=equipped.ring_of_collapsing_futures&!buff.temptation.up" );
+                                ",if=equipped.grongs_primal_rage&buff.enrage.up&!buff.recklessness.up" );
     }
     else if ( items[ i ].has_special_effect( SPECIAL_EFFECT_SOURCE_NONE, SPECIAL_EFFECT_USE ) )
     {
@@ -4799,33 +5087,33 @@ void warrior_t::apl_fury()
   {
     if ( racial_actions[ i ] == "arcane_torrent" )
     {
-      default_list->add_action( racial_actions[ i ] + ",if=rage<40&!buff.recklessness.up" );
+      // While it's on the GCD, arcane torrent wasting a global
+      // is a dps decrease.
+      // default_list->add_action( racial_actions[ i ] + ",if=rage<40&!buff.recklessness.up" );
     }
     else if ( racial_actions[ i ] == "lights_judgment" )
     {
-      default_list->add_action( racial_actions[ i ] + ",if=cooldown.recklessness.remains<3" );
+      default_list->add_action( racial_actions[ i ] + ",if=buff.recklessness.down" );
     }
     else
     {
-      default_list->add_action( racial_actions[ i ] + ",if=buff.recklessness.up" );
+      default_list->add_action( racial_actions[ i ] );
     }
   }
   default_list->add_action( "run_action_list,name=single_target" );
 
   movement->add_action( this, "Heroic Leap" );
 
-  single_target->add_talent( this, "Siegebreaker", "if=buff.recklessness.up|cooldown.recklessness.remains>28" );
+  single_target->add_talent( this, "Siegebreaker" );
   single_target->add_action( this, "Rampage",
                              "if=buff.recklessness.up|(talent.frothing_berserker.enabled|talent.carnage.enabled&(buff."
                              "enrage.remains<gcd|rage>90)|talent.massacre.enabled&(buff.enrage.remains<gcd|rage>90))" );
-  single_target->add_action( this, "Execute", "if=buff.enrage.up" );
-  single_target->add_action( this, "Bloodthirst", "if=buff.enrage.down" );
+  single_target->add_action( this, "Execute" );
+  single_target->add_talent( this, "Bladestorm",  "if=prev_gcd.1.rampage" );
+  single_target->add_action( this, "Bloodthirst", "if=buff.enrage.down|azerite.cold_steel_hot_blood.rank>1" );
   single_target->add_action( this, "Raging Blow", "if=charges=2" );
   single_target->add_action( this, "Bloodthirst" );
-  single_target->add_talent( this, "Bladestorm",
-                             "if=prev_gcd.1.rampage&(debuff.siegebreaker.up|!talent.siegebreaker.enabled)" );
-  single_target->add_talent( this, "Dragon Roar",
-                             "if=buff.enrage.up&(debuff.siegebreaker.up|!talent.siegebreaker.enabled)" );
+  single_target->add_talent( this, "Dragon Roar", "if=buff.enrage.up" );
   single_target->add_action(
       this, "Raging Blow",
       "if=talent.carnage.enabled|(talent.massacre.enabled&rage<80)|(talent.frothing_berserker.enabled&rage<90)" );
@@ -4841,6 +5129,7 @@ void warrior_t::apl_arms()
 
   default_apl_dps_precombat();
   action_priority_list_t* default_list  = get_action_priority_list( "default" );
+  action_priority_list_t* hac           = get_action_priority_list( "hac" );
   action_priority_list_t* five_target   = get_action_priority_list( "five_target" );
   action_priority_list_t* execute       = get_action_priority_list( "execute" );
   action_priority_list_t* single_target = get_action_priority_list( "single_target" );
@@ -4851,6 +5140,7 @@ void warrior_t::apl_arms()
   if ( sim->allow_potions && true_level >= 80 )
   {
     default_list->add_action( "potion" );
+  //default_list->add_action( "potion","if=(talent.massacre.enabled&target.health.pct<35|target.health.pct<20)&debuff.colossus_smash.up );
   }
 
   for ( size_t i = 0; i < racial_actions.size(); i++ )
@@ -4872,10 +5162,10 @@ void warrior_t::apl_arms()
 
   for ( size_t i = 0; i < items.size(); i++ )
   {
-    if ( items[ i ].name_str == "ring_of_collapsing_futures" )
+    if ( items[ i ].name_str == "grongs_primal_rage" )
     {
       default_list->add_action( "use_item,name=" + items[ i ].name_str +
-                                ",if=equipped.ring_of_collapsing_futures&!buff.temptation.up" );
+                                ",if=equipped.grongs_primal_rage&!debuff.colossus_smash.up&!buff.test_of_might.up" );
     }
     else if ( items[ i ].has_special_effect( SPECIAL_EFFECT_SOURCE_NONE, SPECIAL_EFFECT_USE ) )
     {
@@ -4887,92 +5177,112 @@ void warrior_t::apl_arms()
   default_list->add_talent(
       this, "Avatar",
       "if=cooldown.colossus_smash.remains<8|(talent.warbreaker.enabled&cooldown.warbreaker.remains<8)" );
-  default_list->add_action( this, "Sweeping Strikes", "if=spell_targets.whirlwind>1" );
+  default_list->add_action( this, "Sweeping Strikes", "if=spell_targets.whirlwind>1&(cooldown.bladestorm.remains>10"
+                            "|cooldown.colossus_smash.remains>8|azerite.test_of_might.enabled)" );
 
+  default_list->add_action( "run_action_list,name=hac,if=raid_event.adds.exists" );
   default_list->add_action( "run_action_list,name=five_target,if=spell_targets.whirlwind>4" );
-  default_list->add_action(
-      "run_action_list,name=execute,if=(talent.massacre.enabled&target.health.pct<35)|target.health.pct<20" );
+  default_list->add_action( "run_action_list,name=execute,if=(talent.massacre.enabled&target.health.pct<35)|target.health.pct<20" );
   default_list->add_action( "run_action_list,name=single_target" );
 
+  hac->add_talent( this, "Rend",
+                           "if=remains<=duration*0.3&(!raid_event.adds.up|buff.sweeping_strikes.up)" );
+  hac->add_talent( this, "Skullsplitter",
+                           "if=rage<60&(cooldown.deadly_calm.remains>3|!talent.deadly_calm.enabled)" );
+  hac->add_talent( this, "Deadly Calm",
+                           "if=(cooldown.bladestorm.remains>6|talent.ravager.enabled&cooldown.ravager.remains>6)&"
+                           "(cooldown.colossus_smash.remains<2|(talent.warbreaker.enabled&cooldown.warbreaker.remains<2))" );
+  hac->add_talent( this, "Ravager",
+                           "if=(raid_event.adds.up|raid_event.adds.in>target.time_to_die)&(cooldown.colossus_smash.remains<2|"
+                           "(talent.warbreaker.enabled&cooldown.warbreaker.remains<2))" );
+  hac->add_action( this, "Colossus Smash",
+                           "if=raid_event.adds.up|raid_event.adds.in>40|(raid_event.adds.in>20&talent.anger_management.enabled)" );
+  hac->add_talent( this, "Warbreaker",
+                           "if=raid_event.adds.up|raid_event.adds.in>40|(raid_event.adds.in>20&talent.anger_management.enabled)" );
+  hac->add_action( this, "Bladestorm",
+                           "if=(debuff.colossus_smash.up&raid_event.adds.in>target.time_to_die)|raid_event.adds.up&"
+                           "((debuff.colossus_smash.remains>4.5&!azerite.test_of_might.enabled)|buff.test_of_might.up)" );
+  hac->add_action( this, "Overpower",
+                           "if=!raid_event.adds.up|(raid_event.adds.up&azerite.seismic_wave.enabled)" );
+  hac->add_talent( this, "Cleave",
+                           "if=spell_targets.whirlwind>2" );
+  hac->add_action( this, "Execute",
+                           "if=!raid_event.adds.up|(!talent.cleave.enabled&dot.deep_wounds.remains<2)|buff.sudden_death.react" );
+  hac->add_action( this, "Mortal Strike",
+                           "if=!raid_event.adds.up|(!talent.cleave.enabled&dot.deep_wounds.remains<2)" );
+  hac->add_action( this, "Whirlwind",
+                           "if=raid_event.adds.up" );
+  hac->add_action( this, "Overpower" );
+  hac->add_action( this, "Whirlwind",
+                           "if=talent.fervor_of_battle.enabled" );
+  hac->add_action( this, "Slam",
+                           "if=!talent.fervor_of_battle.enabled&!raid_event.adds.up" );
+
   five_target->add_talent( this, "Skullsplitter",
-                           "if=rage<70&(cooldown.deadly_calm.remains>3|!talent.deadly_calm.enabled)" );
-  five_target->add_talent( this, "Deadly Calm",
-                           "if=cooldown.bladestorm.remains>6&((cooldown.colossus_smash.remains<2|(talent.warbreaker."
-                           "enabled&cooldown.warbreaker.remains<2))|(equipped.weight_of_the_earth&cooldown.heroic_leap."
-                           "remains<2))" );
+                           "if=rage<60&(!talent.deadly_calm.enabled|buff.deadly_calm.down)" );
+
+  five_target->add_talent( this, "Ravager",
+                           "if=(!talent.warbreaker.enabled|cooldown.warbreaker.remains<2)" );
   five_target->add_action( this, "Colossus Smash", "if=debuff.colossus_smash.down" );
   five_target->add_talent( this, "Warbreaker", "if=debuff.colossus_smash.down" );
-  five_target->add_action( this, "Heroic Leap",
-                           "if=equipped.weight_of_the_earth&debuff.colossus_smash.down&((cooldown.colossus_smash."
-                           "remains>8&!prev_gcd.1.colossus_smash)|(talent.warbreaker.enabled&cooldown.warbreaker."
-                           "remains>8&!prev_gcd.1.warbreaker))" );
   five_target->add_action( this, "Bladestorm",
-                           "if=buff.sweeping_strikes.down&debuff.colossus_smash.remains>4.5&(prev_gcd.1.mortal_strike|"
-                           "spell_targets.whirlwind>1)&(!buff.deadly_calm.up|!talent.deadly_calm.enabled)" );
-  five_target->add_talent( this, "Ravager",
-                           "if=debuff.colossus_smash.up&(cooldown.deadly_calm.remains>6|!talent.deadly_calm.enabled)" );
-  five_target->add_action( this, "Cleave" );
+                           "if=buff.sweeping_strikes.down&(!talent.deadly_calm.enabled|buff.deadly_calm.down)&"
+                            "((debuff.colossus_smash.remains>4.5&!azerite.test_of_might.enabled)|buff.test_of_might.up)" );
+  five_target->add_talent( this, "Deadly Calm" );
+  five_target->add_talent( this, "Cleave" );
   five_target->add_action( this, "Execute",
                            "if=(!talent.cleave.enabled&dot.deep_wounds.remains<2)|(buff.sudden_death.react|buff.stone_"
                            "heart.react)&(buff.sweeping_strikes.up|cooldown.sweeping_strikes.remains>8)" );
   five_target->add_action( this, "Mortal Strike",
                            "if=(!talent.cleave.enabled&dot.deep_wounds.remains<2)|buff.sweeping_strikes.up&buff."
-                           "overpower.stack=2&(talent.dreadnaught.enabled|equipped.archavons_heavy_hand)" );
-  five_target->add_action( this, "Whirlwind", "if=debuff.colossus_smash.up" );
+                           "overpower.stack=2&(talent.dreadnaught.enabled|buff.executioners_precision.stack=2)" );
+  five_target->add_action( this, "Whirlwind", "if=debuff.colossus_smash.up|(buff.crushing_assault.up&talent.fervor_of_"
+                                 "battle.enabled)" );
+  five_target->add_action( this, "Whirlwind", "if=buff.deadly_calm.up|rage>60" );
   five_target->add_action( this, "Overpower" );
   five_target->add_action( this, "Whirlwind" );
 
-  execute->add_talent( this, "Rend", "if=remains<=duration*0.3&debuff.colossus_smash.down" );
-  execute->add_talent(
-      this, "Skullsplitter",
-      "if=rage<70&((cooldown.deadly_calm.remains>3&!buff.deadly_calm.up)|!talent.deadly_calm.enabled)" );
-  execute->add_talent( this, "Deadly Calm",
-                       "if=cooldown.bladestorm.remains>6&((cooldown.colossus_smash.remains<2|(talent.warbreaker."
-                       "enabled&cooldown.warbreaker.remains<2))|(equipped.weight_of_the_earth&cooldown.heroic_leap."
-                       "remains<2))" );
+//execute->add_talent( this, "Rend", "if=remains<=duration*0.3&debuff.colossus_smash.down" ); Not worth casting at the moment
+  execute->add_talent( this, "Skullsplitter",
+                       "if=rage<60&(!talent.deadly_calm.enabled|buff.deadly_calm.down)" );
+  execute->add_talent( this, "Ravager",
+                       "if=!buff.deadly_calm.up&(cooldown.colossus_smash.remains<2|(talent.warbreaker.enabled&cooldown."
+                       "warbreaker.remains<2))" );
   execute->add_action( this, "Colossus Smash", "if=debuff.colossus_smash.down" );
   execute->add_talent( this, "Warbreaker", "if=debuff.colossus_smash.down" );
-  execute->add_action( this, "Heroic Leap",
-                       "if=equipped.weight_of_the_earth&debuff.colossus_smash.down&((cooldown.colossus_smash.remains>8&"
-                       "!prev_gcd.1.colossus_smash)|(talent.warbreaker.enabled&cooldown.warbreaker.remains>8&!prev_gcd."
-                       "1.warbreaker))" );
-  execute->add_action(
-      this, "Bladestorm",
-      "if=debuff.colossus_smash.remains>4.5&rage<70&(!buff.deadly_calm.up|!talent.deadly_calm.enabled)" );
-  execute->add_talent( this, "Ravager",
-                       "if=debuff.colossus_smash.up&(cooldown.deadly_calm.remains>6|!talent.deadly_calm.enabled)" );
-  execute->add_action( this, "Cleave", "if=spell_targets.whirlwind>2" );
-  execute->add_action( this, "Mortal Strike",
-                       "if=buff.overpower.stack=2&(talent.dreadnaught.enabled|equipped.archavons_heavy_hand)" );
+  execute->add_talent( this, "Deadly Calm");
+  execute->add_action( this, "Bladestorm", "if=rage<30&!buff.deadly_calm.up" );
+  execute->add_talent( this, "Cleave", "if=spell_targets.whirlwind>2" );
+  execute->add_action( this, "Slam", "if=buff.crushing_assault.up" );
+  execute->add_action( this, "Mortal Strike","if=buff.overpower.stack=2&talent.dreadnaught."
+                             "enabled|buff.executioners_precision.stack=2" );
+  execute->add_action( this, "Execute" , "if=buff.deadly_calm.up");
   execute->add_action( this, "Overpower" );
-  execute->add_action( this, "Execute",
-                       "if=rage>=40|debuff.colossus_smash.up|buff.sudden_death.react|buff.stone_heart.react" );
+  execute->add_action( this, "Execute" );
 
   single_target->add_talent( this, "Rend", "if=remains<=duration*0.3&debuff.colossus_smash.down" );
   single_target->add_talent( this, "Skullsplitter",
-                             "if=rage<70&(cooldown.deadly_calm.remains>3|!talent.deadly_calm.enabled)" );
-  single_target->add_talent( this, "Deadly Calm",
-                             "if=cooldown.bladestorm.remains>6&((cooldown.colossus_smash.remains<2|(talent.warbreaker."
-                             "enabled&cooldown.warbreaker.remains<2))|(equipped.weight_of_the_earth&cooldown.heroic_"
-                             "leap.remains<2))" );
+                             "if=rage<60&(!talent.deadly_calm.enabled|buff.deadly_calm.down)" );
+  single_target->add_talent( this, "Ravager", "if=!buff.deadly_calm.up&(cooldown.colossus_smash.remains<2|(talent."
+                             "warbreaker.enabled&cooldown.warbreaker.remains<2))");
   single_target->add_action( this, "Colossus Smash", "if=debuff.colossus_smash.down" );
   single_target->add_talent( this, "Warbreaker", "if=debuff.colossus_smash.down" );
-  single_target->add_action( this, "Heroic Leap",
-                             "if=equipped.weight_of_the_earth&debuff.colossus_smash.down&((cooldown.colossus_smash."
-                             "remains>8&!prev_gcd.1.colossus_smash)|(talent.warbreaker.enabled&cooldown.warbreaker."
-                             "remains>8&!prev_gcd.1.warbreaker))" );
-  single_target->add_action( this, "Execute", "if=buff.sudden_death.react|buff.stone_heart.react" );
+  single_target->add_talent( this, "Deadly Calm" );
+  single_target->add_action( this, "Execute", "if=buff.sudden_death.react" );
   single_target->add_action( this, "Bladestorm",
-                             "if=buff.sweeping_strikes.down&debuff.colossus_smash.remains>4.5&(prev_gcd.1.mortal_"
-                             "strike|spell_targets.whirlwind>1)&(!buff.deadly_calm.up|!talent.deadly_calm.enabled)" );
-  single_target->add_talent(
-      this, "Ravager", "if=debuff.colossus_smash.up&(cooldown.deadly_calm.remains>6|!talent.deadly_calm.enabled)" );
-  single_target->add_action( this, "Cleave", "if=spell_targets.whirlwind>2" );
+                             "if=cooldown.mortal_strike.remains&(!talent.deadly_calm.enabled|buff.deadly_calm.down)&"
+                             "((debuff.colossus_smash.up&!azerite.test_of_might.enabled)|buff.test_of_might.up)" );
+  single_target->add_talent( this, "Cleave", "if=spell_targets.whirlwind>2" );
+  single_target->add_action( this, "Overpower", "if=azerite.seismic_wave.rank=3" );
   single_target->add_action( this, "Mortal Strike" );
+  single_target->add_action( this, "Whirlwind", "if=talent.fervor_of_battle.enabled&(buff.deadly_calm.up|rage>=60)" );
   single_target->add_action( this, "Overpower" );
   single_target->add_action( this, "Whirlwind",
-                             "if=talent.fervor_of_battle.enabled&(rage>=50|debuff.colossus_smash.up)" );
-  single_target->add_action( this, "Slam", "if=!talent.fervor_of_battle.enabled&(rage>=40|debuff.colossus_smash.up)" );
+                             "if=talent.fervor_of_battle.enabled&(!azerite.test_of_might.enabled|"
+                             "debuff.colossus_smash.up)" );
+  single_target->add_action( this, "Slam",
+                             "if=!talent.fervor_of_battle.enabled&(!azerite.test_of_might.enabled|"
+                             "debuff.colossus_smash.up|buff.deadly_calm.up|rage>=60)");
 }
 
 // Protection Warrior Action Priority List ========================================
@@ -4984,49 +5294,44 @@ void warrior_t::apl_prot()
   default_apl_dps_precombat();
 
   action_priority_list_t* default_list = get_action_priority_list( "default" );
-  action_priority_list_t* prot         = get_action_priority_list( "prot" );
+  action_priority_list_t* st           = get_action_priority_list( "st" );
+  action_priority_list_t* aoe          = get_action_priority_list( "aoe" );
 
-  default_list->add_action( "auto_attack" );
-  default_list->add_action( this, "intercept" );
-
-  size_t num_items = items.size();
-  for ( size_t i = 0; i < num_items; i++ )
-  {
-    if ( items[ i ].name_str == "archimondes_hatred_reborn" )
-    {
-      default_list->add_action( this, "Last Stand", "if=cooldown.archimondes_hatred_reborn.remains=0" );
-      default_list->add_action( "use_item,name=" + items[ i ].name_str + ",if=buff.last_stand.up" );
-    }
-    else if ( items[ i ].has_special_effect( SPECIAL_EFFECT_SOURCE_NONE, SPECIAL_EFFECT_USE ) )
-    {
-      if ( items[ i ].slot != SLOT_WAIST )
-        default_list->add_action( "use_item,name=" + items[ i ].name_str );
-    }
-  }
-
+  default_list -> add_action( "auto_attack" );
+  default_list -> add_action( this, "Intercept", "if=time=0" );
+  default_list -> add_action( "use_items,if=cooldown.avatar.remains>20" );
+  default_list -> add_action( "use_item,name=grongs_primal_rage,if=buff.avatar.down" );
+  
   for ( size_t i = 0; i < racial_actions.size(); i++ )
-    default_list->add_action( racial_actions[ i ] );
+    default_list -> add_action( racial_actions[ i ] );
 
-  default_list->add_action( "call_action_list,name=prot" );
+  default_list -> add_action( "potion,if=buff.avatar.up|target.time_to_die<25" );
+  default_list -> add_action( this, "Ignore Pain", "if=rage.deficit<25+20*talent.booming_voice.enabled*cooldown.demoralizing_shout.ready", "use Ignore Pain to avoid rage capping" );
+  default_list -> add_action( this, "Avatar" );
+  default_list -> add_action( "run_action_list,name=aoe,if=spell_targets.thunder_clap>=3" );
+  default_list -> add_action( "call_action_list,name=st" );
 
-  if ( sim->allow_potions && true_level >= 80 )
-  {
-    prot->add_action( "potion,if=target.time_to_die<25" );
-  }
+  st -> add_action( this, "Thunder Clap", "if=spell_targets.thunder_clap=2&talent.unstoppable_force.enabled&buff.avatar.up" );
+  st -> add_action( this, "Shield Block", "if=cooldown.shield_slam.ready&buff.shield_block.down&azerite.brace_for_impact.rank>azerite.deafening_crash.rank&buff.avatar.up" );
+  st -> add_action( this, "Shield Slam", "if=azerite.brace_for_impact.rank>azerite.deafening_crash.rank&buff.avatar.up&buff.shield_block.up" );
+  st -> add_action( this, "Thunder Clap", "if=(talent.unstoppable_force.enabled&buff.avatar.up)" );
+  st -> add_action( this, "Demoralizing Shout", "if=talent.booming_voice.enabled" );
+  st -> add_action( this, "Shield Block", "if=cooldown.shield_slam.ready&buff.shield_block.down" );
+  st -> add_action( this, "Shield Slam" );
+  st -> add_talent( this, "Dragon Roar" );
+  st -> add_action( this, "Thunder Clap" );
+  st -> add_action( this, "Revenge" );
+  st -> add_talent( this, "Ravager" );
+  st -> add_action( this, "Devastate" );
 
-  prot->add_action( this, "Battle Cry", "if=cooldown.shield_slam.remains=0" );
-  prot->add_action( this, "Avatar" );
-  prot->add_action( this, "Demoralizing Shout" );
-  prot->add_action( this, "Ravager", "if=talent.ravager.enabled" );
-  prot->add_action( this, "Shield Block", "if=cooldown.shield_slam.remains=0" );
-  prot->add_action( this, "Ignore Pain" );
-  prot->add_action( this, "Shield Slam" );
-  prot->add_action( this, "Revenge",
-                    "if=(!talent.vengeance.enabled)|(talent.vengeance.enabled&buff.revenge.react&!buff.vengeance_"
-                    "ignore_pain.up)|(buff.vengeance_revenge.up)|(talent.vengeance.enabled&!buff.vengeance_ignore_pain."
-                    "up&!buff.vengeance_revenge.up&rage>=30)" );
-  prot->add_action( this, "Thunder Clap" );
-  prot->add_action( this, "Devastate" );
+  aoe -> add_action( this, "Thunder Clap" );
+  aoe -> add_action( this, "Demoralizing Shout", "if=talent.booming_voice.enabled" );
+  aoe -> add_talent( this, "Dragon Roar" );
+  aoe -> add_action( this, "Revenge" );
+  aoe -> add_talent( this, "Ravager" );
+  aoe -> add_action( this, "Shield Block", "if=cooldown.shield_slam.ready&buff.shield_block.down" );
+  aoe -> add_action( this, "Shield Slam" );
+
 }
 
 // NO Spec Combat Action Priority List
@@ -5048,22 +5353,30 @@ template <typename Base>
 struct warrior_buff_t : public Base
 {
 public:
-  typedef warrior_buff_t base_t;
-  warrior_buff_t( warrior_td_t& p, const buff_creator_basics_t& params ) : Base( params ), warrior( p.warrior )
+  using base_t = warrior_buff_t;
+
+
+  warrior_buff_t( warrior_td_t& td, const std::string& name, const spell_data_t* s = spell_data_t::nil(),
+                 const item_t* item = nullptr )
+    : Base( td, name, s, item )
   {
   }
 
-  warrior_buff_t( warrior_t& p, const buff_creator_basics_t& params ) : Base( params ), warrior( p )
+  warrior_buff_t( warrior_t& p, const std::string& name, const spell_data_t* s = spell_data_t::nil(),
+                 const item_t* item = nullptr )
+    : Base( &p, name, s, item )
   {
-  }
-
-  warrior_td_t& get_td( player_t* t ) const
-  {
-    return *( warrior.get_target_data( t ) );
   }
 
 protected:
-  warrior_t& warrior;
+  warrior_t& warrior()
+  {
+    return *debug_cast<warrior_t*>( Base::source );
+  }
+  const warrior_t& warrior() const
+  {
+    return *debug_cast<warrior_t*>( Base::source );
+  }
 };
 
 // Rallying Cry ==============================================================
@@ -5072,47 +5385,48 @@ struct rallying_cry_t : public warrior_buff_t<buff_t>
 {
   int health_gain;
   rallying_cry_t( warrior_t& p, const std::string& n, const spell_data_t* s )
-    : base_t( p, buff_creator_t( &p, n, s ) ), health_gain( 0 )
+    : base_t( p, n, s ), health_gain( 0 )
   {
   }
 
   bool trigger( int stacks, double value, double chance, timespan_t duration ) override
   {
     health_gain = static_cast<int>(
-        util::floor( warrior.resources.max[ RESOURCE_HEALTH ] * warrior.spec.rallying_cry->effectN( 1 ).percent() ) );
-    warrior.stat_gain( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
+        util::floor( warrior().resources.max[ RESOURCE_HEALTH ] * warrior().spec.rallying_cry->effectN( 1 ).percent() ) );
+    warrior().stat_gain( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
     return base_t::trigger( stacks, value, chance, duration );
   }
 
   void expire_override( int expiration_stacks, timespan_t remaining_duration ) override
   {
-    warrior.stat_loss( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
+    warrior().stat_loss( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
     base_t::expire_override( expiration_stacks, remaining_duration );
   }
 };
 
 // Last Stand ======================================================================
 
-struct last_stand_t : public warrior_buff_t<buff_t>
+struct last_stand_buff_t : public warrior_buff_t<buff_t>
 {
   int health_gain;
-  last_stand_t( warrior_t& p, const std::string& n, const spell_data_t* s )
-    : base_t( p, buff_creator_t( &p, n, s ).cd( timespan_t::zero() ) ), health_gain( 0 )
+  last_stand_buff_t( warrior_t& p, const std::string& n, const spell_data_t* s )
+    : base_t( p, n, s ), health_gain( 0 )
   {
+    add_invalidate( CACHE_BLOCK );
+    set_cooldown( timespan_t::zero() );
   }
 
   bool trigger( int stacks, double value, double chance, timespan_t duration ) override
   {
     health_gain = static_cast<int>(
-        util::floor( warrior.resources.max[ RESOURCE_HEALTH ] * ( warrior.spec.last_stand->effectN( 1 ).percent() +
-                                                                  warrior.artifact.will_to_survive.percent() ) ) );
-    warrior.stat_gain( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
+        util::floor( warrior().resources.max[ RESOURCE_HEALTH ] * ( warrior().spec.last_stand->effectN( 1 ).percent() ) ) );
+    warrior().stat_gain( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
     return base_t::trigger( stacks, value, chance, duration );
   }
 
   void expire_override( int expiration_stacks, timespan_t remaining_duration ) override
   {
-    warrior.stat_loss( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
+    warrior().stat_loss( STAT_MAX_HEALTH, health_gain, (gain_t*)nullptr, (action_t*)nullptr, true );
     base_t::expire_override( expiration_stacks, remaining_duration );
   }
 };
@@ -5121,28 +5435,71 @@ struct last_stand_t : public warrior_buff_t<buff_t>
 
 struct debuff_demo_shout_t : public warrior_buff_t<buff_t>
 {
-  debuff_demo_shout_t( warrior_td_t& p )
-    : base_t( p, buff_creator_t( static_cast<actor_pair_t>( p ), "demoralizing_shout_debuff",
-                                 p.source->find_specialization_spell( "Demoralizing Shout" ) ) )
+  int extended;
+  const int deafening_crash_cap;
+  debuff_demo_shout_t( warrior_td_t& p, warrior_t* w )
+    : base_t( p, "demoralizing_shout_debuff", w -> find_specialization_spell( "Demoralizing Shout" ) ),
+      extended( 0 ), deafening_crash_cap( as<int>( w -> azerite.deafening_crash.spell() -> effectN( 3 ).base_value() ) )
   {
+    cooldown -> duration = timespan_t::zero(); // Cooldown handled by the action
     default_value = data().effectN( 1 ).percent();
+  }
+
+  bool trigger( int stacks, double value, double chance, timespan_t duration ) override
+  {
+    extended = 0; // counts extra seconds gained on each debuff past the initial trigger
+    return base_t::trigger( stacks, value, chance, duration );
+  }
+ 
+  // TODO? Change how the extension is coded with deafening crash cap
+  // if another mechanic extends demo shout duration after the initial trigger
+  void extend_duration( player_t* p, timespan_t extra_seconds ) override
+  {
+    if ( extended < deafening_crash_cap )
+    {
+      base_t::extend_duration( p, extra_seconds );
+      extended += as<int>(extra_seconds.total_seconds() );
+    }
   }
 };
 
-// Protection T20 2P buff that generates rage over time
+// Protection T20 2P buff that generates rage over time ==================================
 
 struct protection_rage_t : public warrior_buff_t<buff_t>
 {
   protection_rage_t( warrior_t& p, const std::string& n, const spell_data_t* s )
-    : base_t( p, buff_creator_t( &p, n, s ).tick_callback( [&p]( buff_t*, int, const timespan_t& ) {
-        p.resource_gain(
-            RESOURCE_RAGE,
-            p.sets->set( WARRIOR_PROTECTION, T20, B2 )->effectN( 1 ).trigger()->effectN( 2 ).resource( RESOURCE_RAGE ),
-            p.gain.protection_t20_2p );
-      } ) )
+    : base_t( p, n, s )
   {
+    set_tick_callback( [&p]( buff_t*, int, const timespan_t& ) {
+            p.resource_gain(
+                RESOURCE_RAGE,
+                p.sets->set( WARRIOR_PROTECTION, T20, B2 )->effectN( 1 ).trigger()->effectN( 2 ).resource( RESOURCE_RAGE ),
+                p.gain.protection_t20_2p );
+          } );
     // The initial tick generates 20 rage and is done in Berserker's Rage execute
     tick_zero = false;
+  }
+};
+
+// Test of Might Tracker ===================================================================
+
+struct test_of_might_t : public warrior_buff_t<buff_t>
+{
+  test_of_might_t( warrior_t& p, const std::string& n, const spell_data_t* s )
+    : base_t( p, n, s )
+  {
+    quiet = true;
+  }
+
+  void expire_override( int expiration_stacks, timespan_t remaining_duration ) override
+  {
+    stat_buff_t* test_of_might = warrior().buff.test_of_might;
+    const int strength = static_cast<int>( current_value / 10 ) * as<int>( warrior().azerite.test_of_might.value( 1 ) );
+    test_of_might->manual_stats_added = false;
+    test_of_might->add_stat( STAT_STRENGTH, strength );
+    test_of_might->trigger();
+    current_value = 0;
+    base_t::expire_override( expiration_stacks, remaining_duration );
   }
 };
 
@@ -5181,6 +5538,7 @@ warrior_td_t::warrior_td_t( player_t* target, warrior_t& p ) : actor_target_data
   dots_deep_wounds = target->get_dot( "deep_wounds", &p );
   dots_ravager     = target->get_dot( "ravager", &p );
   dots_rend        = target->get_dot( "rend", &p );
+  dots_gushing_wound = target->get_dot( "gushing_wound", &p );
 
   debuffs_colossus_smash = buff_creator_t( static_cast<actor_pair_t>( *this ), "colossus_smash" )
                                .default_value( p.spell.colossus_smash_debuff->effectN( 2 ).percent() )
@@ -5192,7 +5550,12 @@ warrior_td_t::warrior_td_t( player_t* target, warrior_t& p ) : actor_target_data
                              .duration( p.spell.siegebreaker_debuff->duration() )
                              .cd( timespan_t::zero() );
 
-  debuffs_demoralizing_shout = new buffs::debuff_demo_shout_t( *this );
+  debuffs_demoralizing_shout = new buffs::debuff_demo_shout_t( *this, &p );
+  debuffs_punish = buff_creator_t( static_cast<actor_pair_t>( *this ), "punish", p.talents.punish -> effectN( 2 ).trigger() )
+                   .default_value( p.talents.punish -> effectN( 2 ).trigger() -> effectN( 1 ).percent() );
+  debuffs_callous_reprisal = buff_creator_t( static_cast<actor_pair_t>( *this ), "callous_reprisal", 
+                                             p.azerite.callous_reprisal.spell() -> effectN( 1 ).trigger() -> effectN( 1 ).trigger() )
+                              .default_value( p.azerite.callous_reprisal.spell() -> effectN( 1 ).percent() );
   debuffs_taunt = buff_creator_t( static_cast<actor_pair_t>( *this ), "taunt", p.find_class_spell( "Taunt" ) );
 }
 
@@ -5211,7 +5574,8 @@ void warrior_t::create_buffs()
   buff.revenge =
       buff_creator_t( this, "revenge", find_spell( 5302 ) ).default_value( find_spell( 5302 )->effectN( 1 ).percent() );
 
-  buff.avatar = buff_creator_t( this, "avatar", talents.avatar ).cd( timespan_t::zero() );
+  buff.avatar = buff_creator_t( this, "avatar", specialization() == WARRIOR_PROTECTION ? spec.avatar : talents.avatar ).cd( timespan_t::zero() );
+
 
   buff.berserker_rage = buff_creator_t( this, "berserker_rage", spec.berserker_rage ).cd( timespan_t::zero() );
 
@@ -5231,22 +5595,11 @@ void warrior_t::create_buffs()
   buff.defensive_stance = buff_creator_t( this, "defensive_stance", talents.defensive_stance )
                               .activated( true )
                               .add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER );
-
-  buff.demoralizing_shout =
-      buff_creator_t( this, "demoralizing_shout", spec.demoralizing_shout )
-          .cd( timespan_t::zero() )
-          .duration( spec.demoralizing_shout->duration() * ( 1.0 + artifact.rumbling_voice.percent() ) );
-
+  
   buff.die_by_the_sword = buff_creator_t( this, "die_by_the_sword", spec.die_by_the_sword )
                               .default_value( spec.die_by_the_sword->effectN( 2 ).percent() )
                               .cd( timespan_t::zero() )
                               .add_invalidate( CACHE_PARRY );
-
-  buff.dragon_scales =
-      buff_creator_t( this, "dragon_scales", artifact.dragon_scales.data().effectN( 1 ).trigger() )
-          .cd( artifact.dragon_scales.data().internal_cooldown() )
-          .chance( artifact.dragon_scales.data().proc_chance() )
-          .default_value( artifact.dragon_scales.data().effectN( 1 ).trigger()->effectN( 1 ).percent() );
 
   buff.enrage = make_buff( this, "enrage", find_spell( 184362 ) )
                     ->add_invalidate( CACHE_ATTACK_HASTE )
@@ -5267,7 +5620,7 @@ void warrior_t::create_buffs()
                            .default_value( find_spell( 202602 )->effectN( 1 ).percent() )
                            .add_invalidate( CACHE_HASTE );
 
-  buff.last_stand = new buffs::last_stand_t( *this, "last_stand", spec.last_stand );
+  buff.last_stand = new buffs::last_stand_buff_t( *this, "last_stand", spec.last_stand );
 
   buff.meat_cleaver = buff_creator_t( this, "meat_cleaver", spell.whirlwind_buff );
 
@@ -5277,15 +5630,10 @@ void warrior_t::create_buffs()
       buff_creator_t( this, "overpower", spec.overpower )
           .default_value( spec.overpower->effectN( 2 ).percent() + talents.dreadnaught->effectN( 2 ).percent() );
 
-  buff.scales_of_earth =
-      buff_creator_t( this, "scales_of_earth", artifact.scales_of_earth.data().effectN( 1 ).trigger() )
-          .chance( artifact.scales_of_earth.data().proc_chance() )
-          .default_value( artifact.scales_of_earth.data().effectN( 1 ).trigger()->effectN( 1 ).percent() )
-          .add_invalidate( CACHE_ARMOR );
-
   buff.ravager = buff_creator_t( this, "ravager", talents.ravager );
 
-  buff.ravager_protection = buff_creator_t( this, "ravager_protection", talents.ravager ).add_invalidate( CACHE_PARRY );
+  buff.ravager_protection = buff_creator_t( this, "ravager_protection", spell.ravager_protection )
+                            .add_invalidate( CACHE_PARRY );
 
   buff.spell_reflection = buff_creator_t( this, "spell_reflection", spec.spell_reflection );
 
@@ -5293,21 +5641,18 @@ void warrior_t::create_buffs()
 
   buff.ignore_pain = new ignore_pain_buff_t( this );
 
-  buff.neltharions_fury = buff_creator_t( this, "neltharions_fury", artifact.neltharions_fury )
-                              .default_value( artifact.neltharions_fury.data().effectN( 1 ).percent() )
-                              .add_invalidate( CACHE_CRIT_BLOCK );
-
-  buff.recklessness =
-      buff_creator_t( this, "recklessness", spec.recklessness )
-          .duration( spec.recklessness->duration() + talents.reckless_abandon->effectN( 1 ).time_value() )
-          .add_invalidate( CACHE_CRIT_CHANCE )
-          .cd( timespan_t::zero() );
+  buff.recklessness = make_buff( this, "recklessness", spec.recklessness )
+    ->set_duration( spec.recklessness->duration() + talents.reckless_abandon->effectN( 1 ).time_value() )
+    ->add_invalidate( CACHE_CRIT_CHANCE )
+    ->set_cooldown( timespan_t::zero() )
+    ->set_default_value( spec.recklessness->effectN( 1 ).percent() )
+    ->set_stack_change_callback( [ this ]( buff_t*, int, int after ) { if ( after == 0 ) buff.infinite_fury->trigger(); });
 
   buff.sudden_death = buff_creator_t( this, "sudden_death", talents.sudden_death );
 
   buff.deadly_calm = buff_creator_t( this, "deadly_calm", talents.deadly_calm ).cd( timespan_t::zero() );
 
-  buff.shield_block = buff_creator_t( this, "shield_block", find_spell( 132404 ) )
+  buff.shield_block = buff_creator_t( this, "shield_block", spell.shield_block_buff )
                           .cd( timespan_t::zero() )
                           .add_invalidate( CACHE_BLOCK );
 
@@ -5334,14 +5679,6 @@ void warrior_t::create_buffs()
                                                    : find_spell( 242952 )->effectN( 1 ).percent() )
           .chance( sets->has_set_bonus( WARRIOR_FURY, T20, B4 ) );
 
-  buff.executioners_precision =
-      buff_creator_t( this, "executioners_precision", artifact.executioners_precision.data().effectN( 1 ).trigger() )
-          .default_value( artifact.executioners_precision.data().effectN( 1 ).trigger()->effectN( 1 ).percent() );
-
-  buff.neltharions_thunder =
-      buff_creator_t( this, "neltharions_thunder", artifact.neltharions_thunder.data().effectN( 1 ).trigger() )
-          .default_value( artifact.neltharions_thunder.data().effectN( 1 ).trigger()->effectN( 1 ).percent() );
-
   buff.sephuzs_secret = new buffs::sephuzs_secret_buff_t( this );
 
   buff.in_for_the_kill = new in_for_the_kill_t( *this, "in_for_the_kill", find_spell( 248622 ) );
@@ -5359,6 +5696,75 @@ void warrior_t::create_buffs()
   buff.protection_rage = new protection_rage_t( *this, "protection_rage", find_spell( 242303 ) );
 
   buff.whirlwind = buff_creator_t( this, "whirlwind", find_spell( 85739 ) );
+
+  // Azerite
+  const spell_data_t* bloodcraze_trigger = azerite.bloodcraze.spell()->effectN( 1 ).trigger();
+  const spell_data_t* bloodcraze_buff    = bloodcraze_trigger->effectN( 1 ).trigger();
+  buff.bloodcraze_driver =
+      make_buff<buff_t>( this, "bloodcraze_driver", bloodcraze_trigger )
+          ->set_trigger_spell( azerite.bloodcraze )
+          ->set_quiet( true )
+          ->set_tick_time_behavior( buff_tick_time_behavior::UNHASTED )
+          ->set_tick_callback( [this]( buff_t*, int, const timespan_t& ) { buff.bloodcraze->trigger(); } );
+
+  buff.bloodcraze = make_buff<buff_t>( this, "bloodcraze", bloodcraze_buff )
+                        ->set_trigger_spell( bloodcraze_trigger )
+                        ->set_default_value( azerite.bloodcraze.value( 1 ) );
+
+  const spell_data_t* crushing_assault_trigger = azerite.crushing_assault.spell()->effectN( 1 ).trigger();
+  const spell_data_t* crushing_assault_buff    = crushing_assault_trigger->effectN( 1 ).trigger();
+  buff.crushing_assault                        = make_buff<buff_t>( this, "crushing_assault", crushing_assault_buff )
+                              ->set_default_value( azerite.crushing_assault.value( 1 ) )
+                              ->set_trigger_spell( crushing_assault_trigger );
+
+  buff.executioners_precision =
+      make_buff( this, "executioners_precision", find_spell( 272870 ) )
+          ->set_trigger_spell( azerite.executioners_precision.spell_ref().effectN( 1 ).trigger() )
+          ->set_default_value( azerite.executioners_precision.value() );
+
+  const spell_data_t* gathering_storm_trigger = azerite.gathering_storm.spell()->effectN( 1 ).trigger();
+  //const spell_data_t* gathering_storm_buff    = gathering_storm_trigger->effectN( 1 ).trigger();
+  buff.gathering_storm                        = make_buff<stat_buff_t>( this, "gathering_storm", find_spell( 273415 ) )
+                           ->add_stat( STAT_STRENGTH, azerite.gathering_storm.value( 1 ) )
+                           ->set_trigger_spell( gathering_storm_trigger );
+
+  const spell_data_t* infinite_fury_trigger = azerite.infinite_fury.spell()->effectN( 1 ).trigger();
+  const spell_data_t* infinite_fury_buff    = infinite_fury_trigger ->effectN( 1 ).trigger();
+  buff.infinite_fury = make_buff( this, "infinite_fury", infinite_fury_buff    )
+                               ->set_trigger_spell( infinite_fury_trigger  )
+                               ->set_default_value( azerite.infinite_fury.value() )
+                               ->add_invalidate( CACHE_CRIT_CHANCE );
+
+  buff.pulverizing_blows = make_buff( this, "pulverizing_blows", find_spell( 275672 ) )
+                               ->set_trigger_spell( azerite.pulverizing_blows.spell_ref().effectN( 1 ).trigger() )
+                               ->set_default_value( azerite.pulverizing_blows.value() );
+
+  const spell_data_t* test_of_might_tracker = azerite.test_of_might.spell()->effectN( 1 ).trigger()->effectN( 1 ).trigger();
+  buff.test_of_might_tracker = new test_of_might_t( *this, "test_of_might_tracker", test_of_might_tracker );
+  buff.test_of_might = make_buff<stat_buff_t>( this, "test_of_might", find_spell( 275540 ) );
+  buff.test_of_might->set_trigger_spell( test_of_might_tracker );
+
+  const spell_data_t* trample_the_weak_trigger = azerite.trample_the_weak.spell()->effectN( 1 ).trigger();
+  const spell_data_t* trample_the_weak_buff    = trample_the_weak_trigger->effectN( 1 ).trigger();
+  buff.trample_the_weak = make_buff<stat_buff_t>( this, "trample_the_weak", trample_the_weak_buff )
+                              ->add_stat( STAT_STRENGTH, azerite.trample_the_weak.value( 1 ) )
+                              ->add_stat( STAT_STAMINA, azerite.trample_the_weak.value( 1 ) )
+                              ->set_trigger_spell( trample_the_weak_trigger );
+  buff.bloodsport = make_buff<stat_buff_t>( this, "bloodsport", azerite.bloodsport.spell() -> effectN( 1 ).trigger() -> effectN( 1 ).trigger() )
+                   -> add_stat( STAT_LEECH_RATING, azerite.bloodsport.value( 2 ) );
+  buff.brace_for_impact = make_buff( this, "brace_for_impact", azerite.brace_for_impact.spell() -> effectN( 1 ).trigger() -> effectN( 1 ).trigger() )
+                         -> set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
+                         -> set_default_value( azerite.brace_for_impact.value( 1 ) );
+  buff.striking_the_anvil = make_buff( this, "striking_the_anvil", find_spell( 288452 ) )
+                               ->set_trigger_spell( azerite.striking_the_anvil.spell_ref().effectN( 1 ).trigger() )
+                               ->set_default_value( azerite.striking_the_anvil.value() );
+
+  const spell_data_t* bastion_of_might_trigger = azerite.bastion_of_might.spell()->effectN( 1 ).trigger();
+  const spell_data_t* bastion_of_might_buff = bastion_of_might_trigger->effectN( 1 ).trigger();
+  buff.bastion_of_might = make_buff<stat_buff_t>( this, "bastion_of_might", bastion_of_might_buff)
+                               ->add_stat( STAT_MASTERY_RATING, azerite.bastion_of_might.value( 1 ) )
+                               ->set_trigger_spell( bastion_of_might_trigger );
+
 }
 
 // warrior_t::init_scaling ==================================================
@@ -5389,7 +5795,6 @@ void warrior_t::init_gains()
   gain.archavons_heavy_hand             = get_gain( "archavons_heavy_hand" );
   gain.avoided_attacks                  = get_gain( "avoided_attacks" );
   gain.critical_block                   = get_gain( "critical_block" );
-  gain.mannoroths_bloodletting_manacles = get_gain( "mannoroths_bloodletting_manacles" );
   gain.melee_crit                       = get_gain( "melee_crit" );
   gain.melee_main_hand                  = get_gain( "melee_main_hand" );
   gain.melee_off_hand                   = get_gain( "melee_off_hand" );
@@ -5402,11 +5807,14 @@ void warrior_t::init_gains()
   gain.collateral_damage                = get_gain( "collateral_damage" );
 
   gain.ceannar_rage           = get_gain( "ceannar_rage" );
+  gain.cold_steel_hot_blood   = get_gain( "cold_steel_hot_blood" );
   gain.endless_rage           = get_gain( "endless_rage" );
+  gain.lord_of_war            = get_gain( "lord_of_war" );
   gain.meat_cleaver           = get_gain( "meat_cleaver" );
   gain.valarjar_berserking    = get_gain( "valarjar_berserking" );
   gain.ravager                = get_gain( "ravager" );
   gain.rage_from_damage_taken = get_gain( "rage_from_damage_taken" );
+  gain.simmering_rage         = get_gain( "simmering_rage" );
   gain.execute_refund         = get_gain( "execute_refund" );
 }
 
@@ -5443,25 +5851,31 @@ void warrior_t::init_resources( bool force )
 std::string warrior_t::default_potion() const
 {
   std::string fury_pot =
-      ( true_level > 100 )
-          ? "old_war"
-          : ( true_level >= 90 )
-                ? "draenic_strength"
-                : ( true_level >= 85 ) ? "mogu_power" : ( true_level >= 80 ) ? "golemblood_potion" : "disabled";
+      ( true_level > 110 )
+          ? "bursting_blood"
+          : ( true_level > 100 )
+                ? "old_war"
+                : ( true_level >= 90 )
+                      ? "draenic_strength"
+                      : ( true_level >= 85 ) ? "mogu_power" : ( true_level >= 80 ) ? "golemblood_potion" : "disabled";
 
   std::string arms_pot =
-      ( true_level > 100 )
-          ? "old_war"
-          : ( true_level >= 90 )
-                ? "draenic_strength"
-                : ( true_level >= 85 ) ? "mogu_power" : ( true_level >= 80 ) ? "golemblood_potion" : "disabled";
+      ( true_level > 110 )
+          ? "bursting_blood"
+          : ( true_level > 100 )
+                ? "old_war"
+                : ( true_level >= 90 )
+                      ? "draenic_strength"
+                      : ( true_level >= 85 ) ? "mogu_power" : ( true_level >= 80 ) ? "golemblood_potion" : "disabled";
 
   std::string protection_pot =
-      ( true_level > 100 )
-          ? "old_war"
-          : ( true_level >= 90 )
-                ? "draenic_strength"
-                : ( true_level >= 85 ) ? "mogu_power" : ( true_level >= 80 ) ? "golemblood_potion" : "disabled";
+      ( true_level > 110 )
+          ? "battle_potion_of_strength"
+          : ( true_level > 100 )
+                ? "old_war"
+                : ( true_level >= 90 )
+                      ? "draenic_strength"
+                      : ( true_level >= 85 ) ? "mogu_power" : ( true_level >= 80 ) ? "golemblood_potion" : "disabled";
 
   switch ( specialization() )
   {
@@ -5480,37 +5894,49 @@ std::string warrior_t::default_potion() const
 
 std::string warrior_t::default_flask() const
 {
-  return ( true_level > 100 )
-             ? "flask_of_the_countless_armies"
-             : ( true_level >= 90 )
-                   ? "greater_draenic_strength_flask"
-                   : ( true_level >= 85 ) ? "winters_bite" : ( true_level >= 80 ) ? "titanic_strength" : "disabled";
+  return ( true_level > 110 )
+             ? "undertow"
+             : ( true_level > 100 )
+                   ? "flask_of_the_countless_armies"
+                   : ( true_level >= 90 )
+                         ? "greater_draenic_strength_flask"
+                         : ( true_level >= 85 ) ? "winters_bite"
+                                                : ( true_level >= 80 ) ? "titanic_strength" : "disabled";
 }
 
 // warrior_t::default_food ==================================================
 
 std::string warrior_t::default_food() const
 {
-  std::string fury_food =
-      ( true_level > 100 )
-          ? "the_hungry_magister"
-          : ( true_level > 90 ) ? "buttered_sturgeon"
-                                : ( true_level >= 85 ) ? "sea_mist_rice_noodles"
-                                                       : ( true_level >= 80 ) ? "seafood_magnifique_feast" : "disabled";
+  std::string fury_food = ( true_level > 110 )
+                              ? "bountiful_captains_feast"
+                              : ( true_level > 100 )
+                                    ? "the_hungry_magister"
+                                    : ( true_level > 90 )
+                                          ? "buttered_sturgeon"
+                                          : ( true_level >= 85 )
+                                                ? "sea_mist_rice_noodles"
+                                                : ( true_level >= 80 ) ? "seafood_magnifique_feast" : "disabled";
 
-  std::string arms_food =
-      ( true_level > 100 )
-          ? "the_hungry_magister"
-          : ( true_level > 90 ) ? "buttered_sturgeon"
-                                : ( true_level >= 85 ) ? "sea_mist_rice_noodles"
-                                                       : ( true_level >= 80 ) ? "seafood_magnifique_feast" : "disabled";
+  std::string arms_food = ( true_level > 110 )
+                              ? "bountiful_captains_feast"
+                              : ( true_level > 100 )
+                                    ? "the_hungry_magister"
+                                    : ( true_level > 90 )
+                                          ? "buttered_sturgeon"
+                                          : ( true_level >= 85 )
+                                                ? "sea_mist_rice_noodles"
+                                                : ( true_level >= 80 ) ? "seafood_magnifique_feast" : "disabled";
 
-  std::string protection_food =
-      ( true_level > 100 )
-          ? "lavish_suramar_feast"
-          : ( true_level > 90 ) ? "buttered_sturgeon"
-                                : ( true_level >= 85 ) ? "sea_mist_rice_noodles"
-                                                       : ( true_level >= 80 ) ? "seafood_magnifique_feast" : "disabled";
+  std::string protection_food = ( true_level > 110 )
+                              ? "bountiful_captains_feast"
+                              : ( true_level > 100 )
+                                    ? "the_hungry_magister"
+                                    : ( true_level > 90 )
+                                          ? "buttered_sturgeon"
+                                          : ( true_level >= 85 )
+                                                ? "sea_mist_rice_noodles"
+                                                : ( true_level >= 80 ) ? "seafood_magnifique_feast" : "disabled";
 
   switch ( specialization() )
   {
@@ -5529,7 +5955,8 @@ std::string warrior_t::default_food() const
 
 std::string warrior_t::default_rune() const
 {
-  return ( true_level >= 110 ) ? "defiled" : ( true_level >= 100 ) ? "hyper" : "disabled";
+  return ( true_level >= 120 ) ? "battle_scarred"
+                               : ( true_level >= 110 ) ? "defiled" : ( true_level >= 100 ) ? "hyper" : "disabled";
 }
 
 // warrior_t::init_actions ==================================================
@@ -5613,7 +6040,9 @@ void warrior_t::combat_begin()
     }
   }
   player_t::combat_begin();
-  buff.into_the_fray->trigger( into_the_fray_friends + 1 );
+  buff.into_the_fray -> trigger( into_the_fray_friends < 0 ? buff.into_the_fray -> max_stack() : into_the_fray_friends + 1 );
+  buff.bloodcraze->trigger( buff.bloodcraze->data().max_stacks() );
+  buff.bloodcraze_driver->trigger();
 }
 
 // Into the fray
@@ -5654,7 +6083,8 @@ void warrior_t::activate()
 {
   player_t::activate();
 
-  if ( talents.into_the_fray->ok() )
+  // If the value is equal to -1, don't use the callback and just assume max stacks all the time
+  if ( talents.into_the_fray->ok() && into_the_fray_friends >= 0 )
   {
     sim->target_non_sleeping_list.register_callback( into_the_fray_callback_t( this ) );
   }
@@ -5696,7 +6126,10 @@ void warrior_t::teleport( double, timespan_t )
 
 void warrior_t::trigger_movement( double distance, movement_direction_e direction )
 {
-  into_the_fray_callback_t( this );
+  if ( talents.into_the_fray->ok() && into_the_fray_friends >= 0 )
+  {
+    into_the_fray_callback_t( this );
+  }
   if ( heroic_charge )
   {
     event_t::cancel( heroic_charge );  // Cancel heroic leap if it's running to make sure nothing weird happens when
@@ -5726,38 +6159,8 @@ double warrior_t::composite_player_multiplier( school_e school ) const
   }
 
   m *= 1.0 + buff.fujiedas_fury->check_stack_value();
-  m *= 1.0 + artifact.protection_of_the_valarjar.percent();
 
   return m;
-}
-
-// warrior_t::composite_player_target_multiplier ==============================
-/* commented off for possible later use
-double warrior_t::composite_player_target_multiplier( player_t* target, school_e school ) const
-{
-  double m = player_t::composite_player_target_multiplier( target, school );
-
-  return m;
-}
-*/
-
-// warrior_t::composite_attribute =============================================
-
-double warrior_t::composite_attribute( attribute_e attr ) const
-{
-  double a = player_t::composite_attribute( attr );
-
-  switch ( attr )
-  {
-    case ATTR_STAMINA:
-      a += artifact.toughness.percent() * player_t::composite_attribute( ATTR_STAMINA );
-      a += artifact.protection_of_the_valarjar.data().effectN( 3 ).percent() *
-           player_t::composite_attribute( ATTR_STAMINA );
-      break;
-    default:
-      break;
-  }
-  return a;
 }
 
 // warrior_t::composite_melee_haste ===========================================
@@ -5781,21 +6184,6 @@ double warrior_t::composite_melee_haste() const
   return a;
 }
 
-// warrior_t::composite_armor_multiplier ======================================
-
-double warrior_t::composite_armor_multiplier() const
-{
-  double a = player_t::composite_armor_multiplier();
-
-  a += artifact.vrykul_shield_training.percent();
-
-  a += buff.scales_of_earth->check_value();
-
-  a += artifact.protection_of_the_valarjar.data().effectN( 2 ).percent();
-
-  return a;
-}
-
 // warrior_t::composite_melee_expertise =====================================
 
 double warrior_t::composite_melee_expertise( const weapon_t* ) const
@@ -5814,7 +6202,22 @@ double warrior_t::composite_mastery() const
   return player_t::composite_mastery();
 }
 
-// warrior_t::composite_rating_multiplier =====================================
+// warrior_t::composite_attribute_multiplier ================================
+
+double warrior_t::composite_attribute_multiplier( attribute_e attr ) const
+{
+  double m = player_t::composite_attribute_multiplier( attr );
+
+  // Protection has increased stamina from vanguard
+  if ( attr == ATTR_STAMINA )
+  {
+    m *= 1.0 + spec.vanguard -> effectN( 2 ).percent();
+  }
+
+  return m;
+}
+
+// warrior_t::composite_rating_multiplier ===================================
 
 double warrior_t::composite_rating_multiplier( rating_e rating ) const
 {
@@ -5838,6 +6241,17 @@ double warrior_t::matching_gear_multiplier( attribute_e attr ) const
   return 0.0;
 }
 
+// warrior_t::composite_bonus_armor ==========================================
+
+double warrior_t::composite_bonus_armor() const
+{
+  double ba = player_t::composite_bonus_armor();
+
+  ba += spec.vanguard -> effectN( 1 ).percent() * cache.strength();
+
+  return ba;
+}
+
 // warrior_t::composite_block ================================================
 
 double warrior_t::composite_block() const
@@ -5846,34 +6260,41 @@ double warrior_t::composite_block() const
   double block_subject_to_dr = cache.mastery() * mastery.critical_block->effectN( 2 ).mastery_value();
   double b                   = player_t::composite_block_dr( block_subject_to_dr );
 
-  // add in spec-specific block bonuses not subject to DR
-  b += spec.prot_warrior->effectN( 13 ).percent();
+  // Protection Warriors have a +8% block chance in their spec aura
+  b += spec.prot_warrior -> effectN( 13 ).percent();
 
   // shield block adds 100% block chance
-  if ( buff.shield_block->check() )
+  if ( buff.shield_block -> check() )
   {
-    b += buff.shield_block->data().effectN( 1 ).percent();
+    b += spell.shield_block_buff -> effectN( 1 ).percent();
   }
+
+  if ( buff.last_stand && talents.bolster -> ok() )
+  {
+    b+= talents.bolster -> effectN( 2 ).percent();
+  }
+
   return b;
 }
 
-// warrior_t::composite_block_reduction ======================================
+// warrior_t::composite_block_reduction =====================================
 
 double warrior_t::composite_block_reduction( action_state_t* s ) const
 {
   double br = player_t::composite_block_reduction( s );
 
+  if ( buff.brace_for_impact -> up() )
+  {
+    br += buff.brace_for_impact -> stack_value();
+  }
+
+  if ( azerite.iron_fortress.enabled() )
+  {
+    br += azerite.iron_fortress.value( 2 );
+  }
+  
   return br;
 }
-
-// warrior_t::composite_melee_attack_power ==================================
-/*
-double warrior_t::composite_melee_attack_power() const
-{
-  double ap = player_t::composite_melee_attack_power();
-  return ap;
-}
-*/
 
 // warrior_t::composite_parry_rating() ========================================
 
@@ -5881,7 +6302,8 @@ double warrior_t::composite_parry_rating() const
 {
   double p = player_t::composite_parry_rating();
 
-  if ( spec.riposte->ok() )
+  // TODO: remove the spec check once riposte is pulled from spelldata
+  if ( spell.riposte -> ok() || specialization() == WARRIOR_PROTECTION )
   {
     p += composite_melee_crit_rating();
   }
@@ -5896,7 +6318,7 @@ double warrior_t::composite_parry() const
 
   if ( buff.ravager_protection->check() )
   {
-    parry += talents.ravager->effectN( 1 ).percent();
+    parry += spell.ravager_protection -> effectN( 1 ).percent();
   }
   else if ( buff.die_by_the_sword->check() )
   {
@@ -5911,9 +6333,9 @@ double warrior_t::composite_attack_power_multiplier() const
 {
   double ap = player_t::composite_attack_power_multiplier();
 
-  if ( mastery.critical_block->ok() )
+  if ( mastery.critical_block -> ok() )
   {
-    ap += cache.mastery() * mastery.critical_block->effectN( 5 ).mastery_value();
+    ap *= 1.0 + mastery.critical_block -> effectN( 5 ).mastery_value() * cache.mastery();
   }
   return ap;
 }
@@ -5922,8 +6344,6 @@ double warrior_t::composite_attack_power_multiplier() const
 
 double warrior_t::composite_crit_block() const
 {
-  if ( buff.neltharions_fury->check() )
-    return 1.0;
 
   double b = player_t::composite_crit_block();
 
@@ -5968,6 +6388,17 @@ double warrior_t::composite_melee_crit_chance() const
   return c;
 }
 
+// warrior_t::composite_melee_crit_rating =========================================
+
+double warrior_t::composite_melee_crit_rating() const
+{
+  double c = player_t::composite_melee_crit_rating();
+
+  c += buff.infinite_fury->check_value();
+
+  return c;
+}
+
 // warrior_t::composite_player_critical_damage_multiplier ==================
 
 double warrior_t::composite_player_critical_damage_multiplier( const action_state_t* s ) const
@@ -5999,14 +6430,20 @@ double warrior_t::composite_leech() const
 */
 
 // warrior_t::resource_gain =================================================
-/*
-double warrior_t::resource_gain( resource_e r, double a, gain_t* gain, action_t* action )
-{
-  double aa = player_t::resource_gain( r, a, gain, action );
 
-  return aa;
+double warrior_t::resource_gain( resource_e r, double a, gain_t* g, action_t* action )
+{
+  if ( buff.recklessness->check() && r == RESOURCE_RAGE )
+  {
+    bool do_not_double_rage = false;
+    do_not_double_rage      = ( g == gain.ceannar_rage || g == gain.valarjar_berserking || g == gain.simmering_rage );
+
+    if ( !do_not_double_rage )  // FIXME: remove this horror after BFA launches, keep Simmering Rage
+      a *= 1.0 + spec.recklessness->effectN( 4 ).percent();
+  }
+  return player_t::resource_gain( r, a, g, action );
 }
-*/
+
 // warrior_t::temporary_movement_modifier ==================================
 
 double warrior_t::temporary_movement_modifier() const
@@ -6066,12 +6503,22 @@ void warrior_t::invalidate_cache( cache_e c )
   {
     player_t::invalidate_cache( CACHE_PLAYER_DAMAGE_MULTIPLIER );
   }
+  if ( c == CACHE_STRENGTH && spec.vanguard -> ok() )
+  {
+    player_t::invalidate_cache( CACHE_BONUS_ARMOR );
+  }
 }
 
 // warrior_t::primary_role() ================================================
 
 role_e warrior_t::primary_role() const
 {
+  if ( player_t::primary_role() == ROLE_TANK )
+    return ROLE_TANK;
+
+  if ( player_t::primary_role() == ROLE_DPS || player_t::primary_role() == ROLE_ATTACK )
+    return ROLE_ATTACK;
+
   if ( specialization() == WARRIOR_PROTECTION )
   {
     return ROLE_TANK;
@@ -6109,25 +6556,6 @@ stat_e warrior_t::convert_hybrid_stat( stat_e s ) const
   }
 }
 
-// warrior_t::assess_damage_imminent_pre_absorb =============================
-
-void warrior_t::assess_damage_imminent_pre_absorb( school_e school, dmg_e dmg, action_state_t* s )
-{
-  player_t::assess_damage_imminent_pre_absorb( school, dmg, s );
-}
-
-void warrior_t::assess_damage_imminent( school_e school, dmg_e dmg, action_state_t* s )
-{
-  player_t::assess_damage_imminent( school, dmg, s );
-  if ( specialization() == WARRIOR_PROTECTION &&
-       s->result_amount > 0 )  // This is after absorbs and damage mitigation. Boo.
-  {
-    double rage_gain_from_damage_taken;
-    rage_gain_from_damage_taken = 50.0 * s->result_amount / expected_max_health;
-    resource_gain( RESOURCE_RAGE, rage_gain_from_damage_taken, gain.rage_from_damage_taken );
-  }
-}
-
 void warrior_t::assess_damage( school_e school, dmg_e type, action_state_t* s )
 {
   player_t::assess_damage( school, type, s );
@@ -6138,6 +6566,29 @@ void warrior_t::assess_damage( school_e school, dmg_e type, action_state_t* s )
     {
       buff.revenge->trigger();
       cooldown.revenge_reset->start();
+    }
+  }
+
+  // Generate 3 Rage on auto-attack taken. 
+  // TODO: Update with spelldata once it actually exists
+  else if ( ! s -> action -> special && cooldown.rage_from_auto_attack->up() )
+  {
+    resource_gain( RESOURCE_RAGE, 3.0, gain.rage_from_damage_taken, s -> action );
+    cooldown.rage_from_auto_attack->start( cooldown.rage_from_auto_attack->duration );
+  }
+
+  if ( s -> block_result == BLOCK_RESULT_BLOCKED || s -> block_result == BLOCK_RESULT_CRIT_BLOCKED )
+  {
+    if ( azerite.iron_fortress.enabled() && cooldown.iron_fortress_icd -> up() )
+    {
+      // sanity check - no friendly-fire
+      if ( s -> action -> player -> is_enemy() )
+      {
+        iron_fortress_t* iron_fortress_active = debug_cast<iron_fortress_t*>( active.iron_fortress );
+
+        iron_fortress_active -> target = s -> action -> player;
+        iron_fortress_active -> do_execute( s -> block_result );
+      }
     }
   }
 }
@@ -6155,8 +6606,6 @@ void warrior_t::target_mitigation( school_e school, dmg_e dtype, action_state_t*
       s->result_amount *= 1.0 + buff.defensive_stance->data().effectN( 1 ).percent();
     }
 
-    s->result_amount *= 1.0 + buff.neltharions_thunder->stack_value();
-
     warrior_td_t* td = get_target_data( s->action->player );
 
     if ( td->debuffs_demoralizing_shout->up() )
@@ -6164,18 +6613,21 @@ void warrior_t::target_mitigation( school_e school, dmg_e dtype, action_state_t*
       s->result_amount *= 1.0 + td->debuffs_demoralizing_shout->value();
     }
 
+    // 2018-10-21: Callous Reprisal's damage reduction is 0.5% per stack per equipped item with the trait selected
+    if ( td -> debuffs_callous_reprisal -> up() )
+    {
+      s -> result_amount *= 1.0 + td -> debuffs_callous_reprisal -> stack_value() * azerite.callous_reprisal.n_items();
+    }
+
+    if ( td -> debuffs_punish -> up() )
+    {
+      s -> result_amount *= 1.0 + td -> debuffs_punish -> value();
+    }
+
     if ( school != SCHOOL_PHYSICAL && buff.spell_reflection->up() )
     {
-      s->result_amount *=
-          1.0 + buff.spell_reflection->data().effectN( 2 ).percent() + artifact.gleaming_scales.percent();
-      if ( !artifact.reflective_plating.rank() )
-      {
-        buff.spell_reflection->expire();
-      }
-      else if ( !s->action->is_aoe() )
-      {
-        s->result_amount = 0;  // The spell is reflected. I'll add in damage done later.
-      }
+      s -> result_amount *= 1.0 + buff.spell_reflection->data().effectN( 2 ).percent();
+      buff.spell_reflection->expire();
     }
     // take care of dmg reduction CDs
     if ( buff.shield_wall->up() )
@@ -6190,14 +6642,8 @@ void warrior_t::target_mitigation( school_e school, dmg_e dtype, action_state_t*
 
   if ( action_t::result_is_block( s->block_result ) )
   {
-    buff.dragon_scales->trigger();
     if ( s->block_result == BLOCK_RESULT_CRIT_BLOCKED )
     {
-      if ( artifact.scales_of_earth.rank() && buff.scales_of_earth->trigger() )
-      {
-        active.scales_of_earth->target = s->action->player;
-        active.scales_of_earth->execute();
-      }
       resource_gain(
           RESOURCE_RAGE,
           sets->set( WARRIOR_PROTECTION, T19, B4 )->effectN( 1 ).trigger()->effectN( 1 ).resource( RESOURCE_RAGE ),
@@ -6215,6 +6661,7 @@ void warrior_t::create_options()
   add_option( opt_bool( "non_dps_mechanics", non_dps_mechanics ) );
   add_option( opt_bool( "warrior_fixed_time", warrior_fixed_time ) );
   add_option( opt_int( "into_the_fray_friends", into_the_fray_friends ) );
+  add_option( opt_int( "never_surrender_percentage", never_surrender_percentage ) );
 }
 
 // warrior_t::create_profile ================================================
@@ -6240,6 +6687,7 @@ void warrior_t::copy_from( player_t* source )
   non_dps_mechanics     = p->non_dps_mechanics;
   warrior_fixed_time    = p->warrior_fixed_time;
   into_the_fray_friends = p->into_the_fray_friends;
+  never_surrender_percentage = p -> never_surrender_percentage;
 }
 
 /* Report Extension Class
@@ -6427,42 +6875,6 @@ struct the_great_storms_eye_t : public unique_gear::class_buff_cb_t<warrior_t>
   }
 };
 
-struct bindings_of_kakushan_t : public unique_gear::class_buff_cb_t<warrior_t>
-{
-  bindings_of_kakushan_t() : super( WARRIOR, "bindings_of_kakushan" )
-  {
-  }
-
-  buff_t*& buff_ptr( const special_effect_t& e ) override
-  {
-    return actor( e )->buff.bindings_of_kakushan;
-  }
-
-  buff_t* creator( const special_effect_t& e ) const override
-  {
-    return make_buff( e.player, buff_name, e.driver()->effectN( 1 ).trigger() )
-        ->set_default_value( e.driver()->effectN( 1 ).trigger()->effectN( 1 ).percent() );
-  }
-};
-
-struct kargaths_sacrificed_hands_t : public unique_gear::class_buff_cb_t<warrior_t>
-{
-  kargaths_sacrificed_hands_t() : super( WARRIOR, "kargaths_sacrificed_hands" )
-  {
-  }
-
-  buff_t*& buff_ptr( const special_effect_t& e ) override
-  {
-    return actor( e )->buff.kargaths_sacrificed_hands;
-  }
-
-  buff_t* creator( const special_effect_t& e ) const override
-  {
-    return make_buff( e.player, buff_name, e.driver()->effectN( 1 ).trigger() )
-        ->set_default_value( e.driver()->effectN( 1 ).trigger()->effectN( 1 ).percent() );
-  }
-};
-
 struct kazzalax_fujiedas_fury_t : public unique_gear::class_buff_cb_t<warrior_t>
 {
   kazzalax_fujiedas_fury_t() : super( WARRIOR, "fujiedas_fury" )
@@ -6479,23 +6891,6 @@ struct kazzalax_fujiedas_fury_t : public unique_gear::class_buff_cb_t<warrior_t>
     return make_buff( e.player, buff_name, e.driver()->effectN( 1 ).trigger() )
         ->set_default_value( e.driver()->effectN( 1 ).trigger()->effectN( 1 ).percent() )
         ->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER );
-  }
-};
-
-struct destiny_driver_t : public unique_gear::class_buff_cb_t<warrior_t>
-{
-  destiny_driver_t() : super( WARRIOR, "destiny_driver" )
-  {
-  }
-
-  buff_t*& buff_ptr( const special_effect_t& e ) override
-  {
-    return actor( e )->buff.destiny_driver;
-  }
-
-  buff_t* creator( const special_effect_t& e ) const override
-  {
-    return make_buff( e.player, buff_name, e.player->find_spell( 215157 ) );
   }
 };
 
@@ -6540,18 +6935,6 @@ struct valarjar_berserkers_t : public unique_gear::scoped_actor_callback_t<warri
   }
 };
 
-struct mannoroths_bloodletting_manacles_t : public unique_gear::scoped_actor_callback_t<warrior_t>
-{
-  mannoroths_bloodletting_manacles_t() : super( WARRIOR )
-  {
-  }
-
-  void manipulate( warrior_t* warrior, const special_effect_t& e ) override
-  {
-    warrior->legendary.mannoroths_bloodletting_manacles = e.driver();
-  }
-};
-
 struct archavons_heavy_hand_t : public unique_gear::scoped_actor_callback_t<warrior_t>
 {
   archavons_heavy_hand_t() : super( WARRIOR )
@@ -6591,13 +6974,9 @@ struct najentuss_vertebrae_t : public unique_gear::scoped_actor_callback_t<warri
 void init()
 {
   unique_gear::register_special_effect( 205144, archavons_heavy_hand_t() );
-  unique_gear::register_special_effect( 207841, bindings_of_kakushan_t(), true );
-  unique_gear::register_special_effect( 207845, kargaths_sacrificed_hands_t(), true );
   unique_gear::register_special_effect( 207779, ceannar_charger_t() );
   unique_gear::register_special_effect( 207775, kazzalax_fujiedas_fury_t(), true );
-  unique_gear::register_special_effect( 215090, destiny_driver_t(), true );
   unique_gear::register_special_effect( 207428, prydaz_xavarics_magnum_opus_t(), true );  // Not finished
-  unique_gear::register_special_effect( 208908, mannoroths_bloodletting_manacles_t() );
   unique_gear::register_special_effect( 215096, najentuss_vertebrae_t() );
   unique_gear::register_special_effect( 207767, ayalas_stone_heart_t(), true );
   unique_gear::register_special_effect( 208177, weight_of_the_earth_t() );

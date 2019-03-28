@@ -172,17 +172,10 @@ struct item_upgrade_t {
 
 struct random_prop_data_t {
   unsigned ilevel;
-  unsigned item_effect;
+  unsigned damage_replace_stat;
   double   p_epic[5];
   double   p_rare[5];
   double   p_uncommon[5];
-};
-
-struct random_suffix_data_t {
-  unsigned    id;
-  const char* suffix;
-  unsigned    enchant_id[5];
-  unsigned    enchant_alloc[5];
 };
 
 struct random_suffix_group_t {
@@ -242,7 +235,6 @@ struct item_data_t {
   int      gem_properties;
   int      id_socket_bonus;
   int      id_set;
-  int      id_suffix_group;
   int      id_scaling_distribution;
   unsigned id_artifact;
 

@@ -11,8 +11,13 @@ cd "PreRaids"
 echo Running PR_Generate.simc in %cd%
 "%~dp0simc.exe" PR_Generate.simc
 cd ..\
+:: DungeonSlice doesn't match the typical pattern
+cd "DungeonSlice"
+echo Running DS_Generate.simc in %cd%
+"%~dp0simc.exe" DS_Generate.simc
+cd ..\
 :: TierXX profiles generation
-for %%g in (21, 22) do (
+for %%g in (22 23) do (
   cd Tier%%g
   echo Running T%%g_Generate.simc in %cd%
   "%~dp0simc.exe" T%%g_Generate.simc

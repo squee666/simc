@@ -1,16 +1,17 @@
 deathknight="PR_Death_Knight_Blood"
+source=default
 spec=blood
 level=120
-race=blood_elf
+race=undead
 role=tank
 position=front
-talents=3112033
+talents=2222023
 
 # Default consumables
-potion=old_war
-flask=countless_armies
-food=lavish_suramar_feast
-augmentation=defiled
+potion=battle_potion_of_strength
+flask=flask_of_the_undertow
+food=swamp_fish_n_chips
+augmentation=battle_scarred
 
 # This default action priority list is automatically created based on your character.
 # It is a attempt to provide you with a action list that is both simple and practicable,
@@ -28,50 +29,57 @@ actions.precombat+=/potion
 
 # Executed every time the actor is available.
 actions=auto_attack
-actions+=/mind_freeze
-actions+=/arcane_torrent,if=runic_power.deficit>20
-actions+=/blood_fury
-actions+=/berserking,if=buff.dancing_rune_weapon.up
-actions+=/use_items
+actions+=/blood_fury,if=cooldown.dancing_rune_weapon.ready&(!cooldown.blooddrinker.ready|!talent.blooddrinker.enabled)
+actions+=/berserking
+actions+=/use_items,if=cooldown.dancing_rune_weapon.remains>90
+actions+=/use_item,name=razdunks_big_red_button
+actions+=/use_item,name=merekthas_fang
 actions+=/potion,if=buff.dancing_rune_weapon.up
-actions+=/dancing_rune_weapon,if=(!talent.blooddrinker.enabled|!cooldown.blooddrinker.ready)
+actions+=/dancing_rune_weapon,if=!talent.blooddrinker.enabled|!cooldown.blooddrinker.ready
 actions+=/tombstone,if=buff.bone_shield.stack>=7
 actions+=/call_action_list,name=standard
 
-actions.standard=death_strike,if=runic_power.deficit<10
+actions.standard=death_strike,if=runic_power.deficit<=10
 actions.standard+=/blooddrinker,if=!buff.dancing_rune_weapon.up
-actions.standard+=/marrowrend,if=buff.bone_shield.remains<=gcd*2
-actions.standard+=/blood_boil,if=charges_fractional>=1.8&buff.haemostasis.stack<5&(buff.haemostasis.stack<3|!buff.dancing_rune_weapon.up)
-actions.standard+=/marrowrend,if=(buff.bone_shield.stack<5&talent.ossuary.enabled)|buff.bone_shield.remains<gcd*3
-actions.standard+=/bonestorm,if=runic_power>=100&spell_targets.bonestorm>=3
-actions.standard+=/death_strike,if=buff.blood_shield.up|(runic_power.deficit<15&(runic_power.deficit<25|!buff.dancing_rune_weapon.up))
-actions.standard+=/heart_strike,if=buff.dancing_rune_weapon.up
-actions.standard+=/death_and_decay,if=buff.crimson_scourge.up
-actions.standard+=/death_and_decay
+actions.standard+=/marrowrend,if=(buff.bone_shield.remains<=rune.time_to_3|buff.bone_shield.remains<=(gcd+cooldown.blooddrinker.ready*talent.blooddrinker.enabled*2)|buff.bone_shield.stack<3)&runic_power.deficit>=20
+actions.standard+=/blood_boil,if=charges_fractional>=1.8&(buff.hemostasis.stack<=(5-spell_targets.blood_boil)|spell_targets.blood_boil>2)
+actions.standard+=/marrowrend,if=buff.bone_shield.stack<5&talent.ossuary.enabled&runic_power.deficit>=15
+actions.standard+=/bonestorm,if=runic_power>=100&!buff.dancing_rune_weapon.up
+actions.standard+=/death_strike,if=runic_power.deficit<=(15+buff.dancing_rune_weapon.up*5+spell_targets.heart_strike*talent.heartbreaker.enabled*2)|target.time_to_die<10
+actions.standard+=/death_and_decay,if=spell_targets.death_and_decay>=3
+actions.standard+=/rune_strike,if=(charges_fractional>=1.8|buff.dancing_rune_weapon.up)&rune.time_to_3>=gcd
+actions.standard+=/heart_strike,if=buff.dancing_rune_weapon.up|rune.time_to_4<gcd
+actions.standard+=/blood_boil,if=buff.dancing_rune_weapon.up
+actions.standard+=/death_and_decay,if=buff.crimson_scourge.up|talent.rapid_decomposition.enabled|spell_targets.death_and_decay>=2
+actions.standard+=/consumption
+actions.standard+=/blood_boil
 actions.standard+=/heart_strike,if=rune.time_to_3<gcd|buff.bone_shield.stack>6
+actions.standard+=/use_item,name=grongs_primal_rage
+actions.standard+=/rune_strike
+actions.standard+=/arcane_torrent,if=runic_power.deficit>20
 
-head=soulspun_casque,id=155866,bonus_id=4779/1512/4775/4786
-neck=heart_of_azeroth,id=158075,bonus_id=4932/4933/4936/1524,azerite_level=
-shoulders=lockjaw_shoulderplate,id=159407,bonus_id=4779/1512/4775/4786
-back=sporecallers_shroud,id=159292,bonus_id=4779/1512/4786
-chest=chestguard_of_the_deep_denizen,id=159408,bonus_id=4779/1512/4775/4786
-wrists=shadowshroud_vambraces,id=160212,bonus_id=4779/1512/4786
-hands=risen_lords_oversized_gauntlets,id=159457,bonus_id=4779/1512/4786
-waist=cannoneers_toolbelt,id=159434,bonus_id=4779/1512/4786
-legs=legplates_of_charged_duality,id=159435,bonus_id=4779/1512/4786
+head=greathelm_of_the_putrid_path,id=159446,bonus_id=4779/1512/4786/4775,azerite_powers=194/22/14/13
+neck=heart_of_azeroth,id=158075,bonus_id=4929/1524,azerite_level=27
+shoulders=pauldrons_of_the_great_unifier,id=159423,bonus_id=4779/1512/4786/4775,azerite_powers=157/22/44/13
+back=raals_bib,id=159294,bonus_id=4779/1512/4786
+chest=desert_guardians_breastplate,id=159424,bonus_id=4779/1512/4786/4775,azerite_powers=482/462/85/13
+wrists=embalmers_steadying_bracers,id=159409,bonus_id=4779/1512/4786
+hands=sharktoothknuckled_grips,id=155890,bonus_id=4779/1512/4786
+waist=belt_of_the_unrelenting_gale,id=159426,bonus_id=4779/1512/4786
+legs=petrified_wickerplate_greaves,id=159456,bonus_id=4779/1512/4786
 feet=sabatons_of_rampaging_elements,id=159679,bonus_id=4779/1512/4786
-finger1=overseers_lost_seal,id=159460,bonus_id=4779/1512/4786,enchant=pact_of_versatility
-finger2=seal_of_questionable_loyalties,id=158314,bonus_id=4779/1512/4786,enchant=pact_of_versatility
-trinket1=gorecrusted_butchers_block,id=159616,bonus_id=4779/1512/4786
-trinket2=jes_howler,id=159627,bonus_id=4779/1512/4786
-main_hand=dismembered_submersible_claw,id=159650,bonus_id=4779/1512/4786,enchant=rune_of_the_fallen_crusader
+finger1=ritual_binders_ring,id=159459,bonus_id=4779/1512/4786,enchant=pact_of_haste
+finger2=band_of_the_ancient_dredger,id=159461,bonus_id=4779/1512/4786,enchant=pact_of_haste
+trinket1=darkmoon_deck_fathoms,id=159125
+trinket2=briny_barnacle,id=159619,bonus_id=4779/1512/4786
+main_hand=getiikku_cut_of_death,id=159644,bonus_id=4779/43/1512/4786,enchant=rune_of_the_fallen_crusader
 
 # Gear Summary
-# gear_ilvl=341.47
-# gear_strength=2883
+# gear_ilvl=342.47
+# gear_strength=2914
 # gear_stamina=4465
-# gear_crit_rating=842
-# gear_haste_rating=499
-# gear_mastery_rating=325
-# gear_versatility_rating=811
-# gear_armor=3050
+# gear_crit_rating=808
+# gear_haste_rating=1055
+# gear_mastery_rating=209
+# gear_versatility_rating=209
+# gear_armor=3054

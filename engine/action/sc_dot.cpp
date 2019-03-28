@@ -5,60 +5,6 @@
 
 #include "simulationcraft.hpp"
 
-namespace {
-
-bool do_find_higher_priority_action( const action_priority_list_t::parent_t& parent )
-{
-  auto apl = std::get<0>( parent );
-  auto idx = std::get<1>( parent );
-
-  for ( size_t i = 0; i < apl -> foreground_action_list.size() && i < idx; ++i )
-  {
-    auto a = apl -> foreground_action_list[ i ];
-
-    if ( a -> ready() )
-    {
-      return true;
-    }
-  }
-
-  return range::find_if( apl -> parents, []( const action_priority_list_t::parent_t& p ) {
-    return do_find_higher_priority_action( p );
-  } ) != apl -> parents.end();
-}
-
-bool do_find_higher_priority_action( action_t* ca )
-{
-  auto apl = ca -> action_list;
-
-  for ( action_t* a : apl -> foreground_action_list )
-  {
-    if ( a == ca )
-    {
-      break;
-    }
-    // FIXME Why not interrupt a channel for the same spell higher up the action
-    // list?
-    // if ( a -> id == current_action -> id ) continue;
-    if ( a -> ready() )
-    {
-      return true;
-    }
-  }
-
-  if ( ca -> interrupt_global )
-  {
-    return range::find_if( apl -> parents, []( const action_priority_list_t::parent_t& p ) {
-      return do_find_higher_priority_action( p );
-    } ) != apl -> parents.end();
-  }
-  else
-  {
-    return false;
-  }
-}
-
-}
 // ==========================================================================
 // Dot
 // ==========================================================================
@@ -218,7 +164,7 @@ void dot_t::refresh_duration( uint32_t state_flags )
       state, state_flags,
       current_action->type == ACTION_HEAL ? HEAL_OVER_TIME : DMG_OVER_TIME );
 
-  refresh( current_action->dot_duration );
+  refresh( current_action->composite_dot_duration( state ) );
 
   current_action->stats->add_refresh( state->target );
 }
@@ -790,6 +736,28 @@ expr_t* dot_t::create_expression( dot_t* dot, action_t* action, action_t* source
     };
     return new ticks_remain_expr_t( dot, action, source_action, dynamic );
   }
+  else if ( name_str == "ticks_remain_fractional" )
+  {
+    struct ticks_remain_fractional_expr_t : public dot_expr_t
+    {
+      ticks_remain_fractional_expr_t(dot_t* d, action_t* a, action_t* sa, bool dynamic)
+        : dot_expr_t("dot_ticks_remain_fractional", d, a, sa, dynamic)
+      {
+      }
+      virtual double evaluate() override
+      {
+        dot_t* dt = dot();
+
+        if (!dt->current_action)
+          return 0;
+        if (!dt->is_ticking())
+          return 0;
+
+        return dt->remains() / dt->current_action->tick_time(dt->state);
+      }
+    };
+    return new ticks_remain_fractional_expr_t(dot, action, source_action, dynamic);
+  }
   else if ( name_str == "ticking" )
   {
     struct ticking_expr_t : public dot_expr_t
@@ -865,20 +833,6 @@ expr_t* dot_t::create_expression( dot_t* dot, action_t* action, action_t* source
     };
     return new dot_pmultiplier_expr_t( dot, action, source_action, dynamic );
   }
-
-#if 0
-  else if ( name_str == "mastery" )
-  {
-    struct dot_mastery_expr_t : public dot_expr_t
-    {
-      dot_mastery_expr_t( dot_t* d, action_t* a, bool dynamic ) :
-        dot_expr_t( "dot_mastery", d, a, dynamic ) {}
-      virtual double evaluate() { return dot() -> state ? dot() -> state -> total_mastery() : 0; }
-    };
-    return new dot_mastery_expr_t( dot, current_action, dynamic );
-  }
-#endif
-
   else if ( name_str == "haste_pct" )
   {
     struct dot_haste_pct_expr_t : public dot_expr_t
@@ -1142,6 +1096,18 @@ void dot_t::schedule_tick()
 
   if ( current_action->channeled )
   {
+    if ( current_action->cancel_if_expr && current_action->cancel_if_expr->success() )
+    {
+      if ( current_action->sim->debug )
+      {
+        current_action->sim->out_debug.print( "{} '{}' cancel_if returns {}, cancelling channel",
+          current_action->player->name(), current_action->signature_str,
+          current_action->cancel_if_expr->eval() );
+      }
+      cancel();
+      return;
+    }
+
     // FIXME: Find some way to make this more realistic - the actor shouldn't
     // have to recast quite this early
     // Response: "Have to"?  It might be good to recast early - since the GCD
@@ -1150,18 +1116,20 @@ void dot_t::schedule_tick()
     if ( ( ( current_action->option.chain && current_tick + 1 == num_ticks ) ||
            ( current_tick > 0 && expr && expr->success() &&
              current_action->player->gcd_ready <= sim.current_time() ) ) &&
-         current_action->ready() && !is_higher_priority_action_available() )
+         current_action->action_ready() && !is_higher_priority_action_available() )
     {
       // FIXME: We can probably use "source" instead of "action->player"
 
       current_action->player->channeling = nullptr;
       current_action->player->gcd_ready =
           sim.current_time() + current_action->gcd();
+      current_action->set_target( target );
       current_action->execute();
       if ( current_action->result_is_hit(
                current_action->execute_state->result ) )
       {
         current_action->player->channeling = current_action;
+        current_action->player->schedule_cwc_ready( timespan_t::zero() );
       }
       else
         cancel();
@@ -1287,7 +1255,9 @@ void dot_t::check_tick_zero()
     timespan_t previous_ttt = time_to_tick;
     time_to_tick            = timespan_t::zero();
     // Recalculate num_ticks:
+#ifndef NDEBUG
     timespan_t tick_time = current_action->tick_time( state );
+#endif
     assert( tick_time > timespan_t::zero() &&
             "A Dot needs a positive tick time!" );
     recalculate_num_ticks();
@@ -1305,7 +1275,17 @@ bool dot_t::is_higher_priority_action_available() const
 {
   assert( current_action->action_list );
 
-  return do_find_higher_priority_action( current_action );
+  auto player = current_action->player;
+  auto apl = current_action->interrupt_global ? player->active_action_list : current_action->action_list;
+
+  player->visited_apls_ = 0;
+  auto action = player->select_action( *apl, execute_type::FOREGROUND, current_action );
+  if ( action && action->internal_id != current_action->internal_id && player->sim->debug )
+  {
+    player->sim->out_debug.print( "{} action available for context {}: {}", player->name(),
+      current_action->signature_str, action->signature_str );
+  }
+  return action != nullptr && action->internal_id != current_action->internal_id;
 }
 
 void dot_t::adjust( double coefficient )
@@ -1352,7 +1332,9 @@ void dot_t::adjust_full_ticks( double coefficient )
   }
 
   sim_t* sim = current_action->sim;
-  int rounded_full_ticks_left = static_cast<int>( std::round( current_duration / time_to_tick ) ) - current_tick;
+
+  // Always at least 1 tick left (even if we would round down before the last partial)
+  int rounded_full_ticks_left = std::max( static_cast<int>( std::round( current_duration / current_action -> tick_time( state ) ) ) - current_tick, 1 );
 
   timespan_t new_dot_remains  = end_event->remains() * coefficient;
   timespan_t new_duration     = current_duration * coefficient;
@@ -1363,7 +1345,12 @@ void dot_t::adjust_full_ticks( double coefficient )
     current_tick++;
     tick();
     new_tick_remains += new_time_to_tick;
+    rounded_full_ticks_left--;
   }
+
+  // Also set last_tick_factor to 1 in case the partial was already scheduled.
+  if (rounded_full_ticks_left == 1)
+    last_tick_factor = 1.0;
 
   if ( sim->debug )
   {
@@ -1385,5 +1372,5 @@ void dot_t::adjust_full_ticks( double coefficient )
   time_to_tick     = new_time_to_tick;
   tick_event       = make_event<dot_tick_event_t>( *sim, this, new_tick_remains );
   end_event        = make_event<dot_end_event_t>( *sim, this, new_dot_remains );
-  recalculate_num_ticks();
+  num_ticks        = current_tick + rounded_full_ticks_left;
 }

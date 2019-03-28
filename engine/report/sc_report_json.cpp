@@ -644,6 +644,7 @@ void to_json( JsonOutput& arr, const player_t& p )
   root[ "level" ] = p.true_level;
   root[ "role" ] = util::role_type_string( p.role );
   root[ "specialization" ] = util::specialization_string( p.specialization() );
+  root[ "profile_source" ] = util::profile_source_string( p.profile_source_ );
 
   talents_to_json( root[ "talents" ], p );
 
@@ -658,6 +659,8 @@ void to_json( JsonOutput& arr, const player_t& p )
   root[ "scale_player" ] = p.scale_player;
   root[ "potion_used" ] = p.potion_used;
   root[ "timeofday" ] = p.timeofday == player_t::NIGHT_TIME ? "NIGHT_TIME" : "DAY_TIME";
+  root[ "zandalari_loa" ] = p.zandalari_loa == player_t::AKUNDA ? "akunda" : p.zandalari_loa == player_t::BWONSAMDI ? "bwonsamdi"
+    : p.zandalari_loa == player_t::GONK ? "gonk" : p.zandalari_loa == player_t::KIMBUL ? "kimbul" : p.zandalari_loa == player_t::KRAGWA ? "kragwa" : "paku";
 
   if ( p.is_enemy() )
   {
@@ -898,6 +901,7 @@ void to_json( JsonOutput root, const sim_t& sim )
   stats_root[ "merge_time_seconds" ] = sim.merge_time;
   stats_root[ "analyze_time_seconds" ] = sim.analyze_time;
   stats_root[ "simulation_length" ] = sim.simulation_length;
+  stats_root[ "total_events_processed" ] = sim.event_mgr.total_events_processed;
   add_non_zero( stats_root, "raid_dps", sim.raid_dps );
   add_non_zero( stats_root, "raid_hps", sim.raid_hps );
   add_non_zero( stats_root, "raid_aps", sim.raid_aps );
@@ -961,6 +965,8 @@ void print_json_pretty( FILE* o, const sim_t& sim )
   root[ "beta_enabled" ] = SC_BETA;
   root[ "build_date" ] = __DATE__;
   root[ "build_time" ] = __TIME__;
+  root[ "timestamp" ] = as<uint64_t>( std::time( nullptr ) );
+
   if ( git_info::available())
   {
     root[ "git_revision" ] = git_info::revision();

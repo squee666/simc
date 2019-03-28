@@ -23,7 +23,7 @@ std::string format_time( double seconds, bool milliseconds = true )
   // For milliseconds, just use a quick format
   else if ( seconds < 1 )
   {
-    s << static_cast<int>( 1000 * seconds ) << "ms";
+    s << util::round( 1000.0 * seconds, 3 ) << "ms";
   }
   // Otherwise, do the whole thing
   else
@@ -138,6 +138,7 @@ void simulate_profileset( sim_t* parent, profileset::profile_set_t& set, sim_t*&
   parent -> init_time    += profile_sim -> init_time;
   parent -> merge_time   += profile_sim -> merge_time;
   parent -> analyze_time += profile_sim -> analyze_time;
+  parent -> event_mgr.total_events_processed += profile_sim -> event_mgr.total_events_processed;
 
   set.cleanup_options();
 }
@@ -522,6 +523,7 @@ bool profilesets_t::parse( sim_t* sim )
     if ( sim -> canceled )
     {
       set_state( DONE );
+      m_control.notify_one();
       return false;
     }
 
@@ -544,6 +546,7 @@ bool profilesets_t::parse( sim_t* sim )
     if ( control == nullptr )
     {
       set_state( DONE );
+      m_control.notify_one();
       return false;
     }
 
@@ -575,6 +578,8 @@ bool profilesets_t::parse( sim_t* sim )
       std::cerr <<  "ERROR! Profileset '" << profileset_name << "' Setup failure: "
                 << e.what() << std::endl;
       set_state( DONE );
+      m_control.notify_one();
+      delete control;
       return false;
     }
 
@@ -814,7 +819,7 @@ void profilesets_t::output_progressbar( const sim_t* parent ) const
   auto time_left = ( work_left / m_max_workers ) * average_per_sim;
 
   // Average time per done simulation
-  s << " avg=" << format_time( average_per_sim );
+  s << " avg=" << format_time( average_per_sim / as<double>( m_max_workers ) );
 
   // Elapsed time
   s << " done=" << format_time( elapsed, false );

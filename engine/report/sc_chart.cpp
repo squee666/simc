@@ -507,6 +507,8 @@ bool chart::generate_raid_gear( highchart::bar_chart_t& bc, const sim_t& sim )
 
   std::array<std::vector<double>, STAT_MAX> data_points;
   std::array<bool, STAT_MAX> has_stat;
+  range::fill( has_stat, false );
+
   for ( stat_e i = STAT_NONE; i < STAT_MAX; i++ )
   {
     data_points[ i ].reserve( sim.players_by_name.size() + 1 );
@@ -1165,7 +1167,7 @@ bool chart::generate_raid_aps( highchart::bar_chart_t& bc, const sim_t& s,
   bc.set( "plotOptions.bar.dataLabels.enabled", true );
   bc.set( "plotOptions.bar.dataLabels.align", "left" );
   bc.set( "plotOptions.bar.dataLabels.verticalAlign", "middle" );
-  bc.set( "plotOptions.bar.dataLabels.style.fontSize", "14px" );
+  bc.set( "plotOptions.bar.dataLabels.style.fontSize", "12px" );
   bc.set( "plotOptions.bar.dataLabels.style.fontWeight", "none" );
   bc.set( "plotOptions.bar.dataLabels.style.textShadow", "none" );
 

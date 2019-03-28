@@ -75,6 +75,11 @@ dmg_e attack_t::report_amount_type( const action_state_t* state ) const
 
 double attack_t::miss_chance( double hit, player_t* t ) const
 {
+  if ( t->is_enemy() && sim->auto_attacks_always_land && !special )
+  {
+    return 0.0;
+  }
+
   // cache.miss() contains the target's miss chance (3.0 base in almost all cases)
   double miss = t->cache.miss();
 
@@ -93,6 +98,11 @@ double attack_t::miss_chance( double hit, player_t* t ) const
 
 double attack_t::dodge_chance( double expertise, player_t* t ) const
 {
+  if ( t->is_enemy() && sim->auto_attacks_always_land && !special )
+  {
+    return 0.0;
+  }
+
   // cache.dodge() contains the target's dodge chance (3.0 base, plus spec bonuses and rating)
   double dodge = t->cache.dodge();
 
@@ -107,6 +117,11 @@ double attack_t::dodge_chance( double expertise, player_t* t ) const
 
 double attack_t::block_chance( action_state_t* s ) const
 {
+  if ( s->target->is_enemy() && sim->auto_attacks_always_land && !special )
+  {
+    return 0.0;
+  }
+
   // cache.block() contains the target's block chance (3.0 base for bosses, more for shield tanks)
   double block = s->target->cache.block();
 
@@ -330,6 +345,11 @@ void melee_attack_t::init()
 
 double melee_attack_t::parry_chance( double expertise, player_t* t ) const
 {
+  if ( t->is_enemy() && sim->auto_attacks_always_land && !special )
+  {
+    return 0.0;
+  }
+
   // cache.parry() contains the target's parry chance (3.0 base, plus spec
   // bonuses and rating)
   double parry = t->cache.parry();
@@ -363,22 +383,21 @@ double melee_attack_t::glance_chance( int delta_level ) const
 
 proc_types melee_attack_t::proc_type() const
 {
-  if ( !is_aoe() )
+  if ( s_data->ok() )
   {
-    if ( special )
-      return PROC1_MELEE_ABILITY;
-    else
-      return PROC1_MELEE;
+    switch ( s_data->dmg_class() )
+    {
+      case SPELL_TYPE_NONE:   return PROC1_NONE_SPELL;
+      case SPELL_TYPE_MAGIC:  return PROC1_MAGIC_SPELL;
+      case SPELL_TYPE_MELEE:  return special ? PROC1_MELEE_ABILITY : PROC1_MELEE;
+      case SPELL_TYPE_RANGED: return special ? PROC1_RANGED_ABILITY : PROC1_RANGED;
+    }
   }
+
+  if ( special )
+    return PROC1_MELEE_ABILITY;
   else
-  {
-    // "Fake" AOE based attacks as spells
-    if ( special )
-      return PROC1_AOE_SPELL;
-    // AOE white attacks shouldn't really happen ..
-    else
-      return PROC1_MELEE;
-  }
+    return PROC1_MELEE;
 }
 
 // ==========================================================================
@@ -445,20 +464,19 @@ void ranged_attack_t::schedule_execute( action_state_t* execute_state )
 
 proc_types ranged_attack_t::proc_type() const
 {
-  if ( !is_aoe() )
+  if ( s_data->ok() )
   {
-    if ( special )
-      return PROC1_RANGED_ABILITY;
-    else
-      return PROC1_RANGED;
+    switch ( s_data->dmg_class() )
+    {
+      case SPELL_TYPE_NONE:   return PROC1_NONE_SPELL;
+      case SPELL_TYPE_MAGIC:  return PROC1_MAGIC_SPELL;
+      case SPELL_TYPE_MELEE:  return special ? PROC1_MELEE_ABILITY : PROC1_MELEE;
+      case SPELL_TYPE_RANGED: return special ? PROC1_RANGED_ABILITY : PROC1_RANGED;
+    }
   }
+
+  if ( special )
+    return PROC1_RANGED_ABILITY;
   else
-  {
-    // "Fake" AOE based attacks as spells
-    if ( special )
-      return PROC1_AOE_SPELL;
-    // AOE white attacks shouldn't really happen ..
-    else
-      return PROC1_RANGED;
-  }
+    return PROC1_RANGED;
 }

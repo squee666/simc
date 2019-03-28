@@ -61,7 +61,7 @@ std::vector<player_t*> action_t::targets_in_range_list(
   return tl;
 }
 
-std::vector<player_t*> action_t::check_distance_targeting(
+std::vector<player_t*>& action_t::check_distance_targeting(
     std::vector<player_t*>& tl ) const
 {
   if ( sim -> distance_targeting_enabled )
@@ -203,6 +203,11 @@ player_t* action_t::select_target_if_target()
     // No need to check current target
     if ( target == original_target )
       continue;
+
+    if ( !target_ready( target ) )
+    {
+      continue;
+    }
 
     double v = target_if_expr->evaluate();
 

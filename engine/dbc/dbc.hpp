@@ -599,7 +599,7 @@ public:
   unsigned         _type;            // 5 Effect type
   unsigned         _subtype;         // 6 Effect sub-type
   // SpellScaling.dbc
-  double           _m_avg;           // 7 Effect average spell scaling multiplier
+  double           _m_coeff;           // 7 Effect average spell scaling multiplier
   double           _m_delta;         // 8 Effect delta spell scaling multiplier
   double           _m_unk;           // 9 Unused effect scaling multiplier
   //
@@ -623,6 +623,7 @@ public:
   unsigned         _targeting_1;     // 25 Targeting related field 1
   unsigned         _targeting_2;     // 26 Targeting related field 2
   double           _m_value;         // 27 Misc multiplier used for some spells(?)
+  double           _pvp_coeff;       // 28 PvP Coefficient
 
   // Pointers for runtime linking
   spell_data_t* _spell;
@@ -704,8 +705,8 @@ public:
   double chain_multiplier() const
   { return _m_chain; }
 
-  double m_average() const
-  { return _m_avg; }
+  double m_coefficient() const
+  { return _m_coeff; }
 
   double m_delta() const
   { return _m_delta; }
@@ -718,6 +719,9 @@ public:
 
   double ap_coeff() const
   { return _ap_coeff; }
+
+  double pvp_coeff() const
+  { return _pvp_coeff; }
 
   timespan_t period() const
   { return timespan_t::from_millis( _amplitude ); }
@@ -880,6 +884,7 @@ public:
   const char* _rank_str;           // 44
 
   unsigned    _req_max_level;      // 45
+  unsigned    _dmg_class;          // 46 SpellCategories.db2 classification for the spell
 
   // Pointers for runtime linking
   std::vector<const spelleffect_data_t*>* _effects;
@@ -888,11 +893,23 @@ public:
   std::vector<const spelllabel_data_t*>* _labels; // Applied (known) labels to the spell
   const hotfix::client_hotfix_entry_t* _hotfix_entry; // First hotfix entry in the hotfix table, if available
 
+  unsigned equipped_class() const
+  { return _equipped_class; }
+
+  unsigned equipped_invtype_mask() const
+  { return _equipped_invtype_mask; }
+
+  item_class equipped_subclass_mask() const
+  { return static_cast<item_class>( _equipped_subclass_mask ); }
+
   // Direct member access functions
-  uint32_t category() const
+  unsigned category() const
   { return _category; }
 
-  uint32_t class_mask() const
+  unsigned dmg_class() const
+  { return _dmg_class; }
+
+  unsigned class_mask() const
   { return _class_mask; }
 
   timespan_t cooldown() const
@@ -1137,6 +1154,7 @@ public:
       case 9:  return WARLOCK;
       case 10: return MONK;
       case 11: return DRUID;
+      case 12: return DEMON_HUNTER;
       default: break;
     }
 
@@ -1499,6 +1517,7 @@ public:
   double health_per_stamina( unsigned level ) const;
   double item_socket_cost( unsigned ilevel ) const;
   double armor_mitigation_constant( unsigned level ) const;
+  double npc_armor_value( unsigned level ) const;
 
   double combat_rating( unsigned combat_rating_id, unsigned level ) const;
 
@@ -1539,7 +1558,6 @@ public:
   { return find_by_id<talent_data_t>( talent_id ); }
 
   const item_data_t*             item( unsigned item_id ) const;
-  const random_suffix_data_t&    random_suffix( unsigned suffix_id ) const;
   const item_enchantment_data_t& item_enchantment( unsigned enchant_id ) const;
   const gem_property_data_t&     gem_property( unsigned gem_id ) const;
 

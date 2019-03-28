@@ -232,6 +232,7 @@ SC_OptionsTab::SC_OptionsTab( SC_MainWindow* parent ) :
   connect( choice.debug,              SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
   connect( choice.default_role,       SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
   connect( choice.gui_localization,   SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
+  connect( choice.update_check,       SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
   connect( choice.boss_type,          SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
   connect( choice.tank_dummy,         SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
   connect( choice.tmi_boss,           SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
@@ -261,7 +262,8 @@ SC_OptionsTab::SC_OptionsTab( SC_MainWindow* parent ) :
   connect( choice.auto_save,          SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
   connect( choice.version,            SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
   connect( choice.world_lag,          SIGNAL( currentIndexChanged( int ) ), this, SLOT( _optionsChanged() ) );
-  connect( apikey,                    SIGNAL( textChanged( const QString& ) ), this, SLOT( _optionsChanged() ) );
+  connect( api_client_id,             SIGNAL( textChanged( const QString& ) ), this, SLOT( _optionsChanged() ) );
+  connect( api_client_secret,         SIGNAL( textChanged( const QString& ) ), this, SLOT( _optionsChanged() ) );
 
   connect( buffsButtonGroup,          SIGNAL( buttonClicked( int ) ), this, SLOT( _optionsChanged() ) );
   connect( debuffsButtonGroup,        SIGNAL( buttonClicked( int ) ), this, SLOT( _optionsChanged() ) );
@@ -300,14 +302,15 @@ void SC_OptionsTab::createGlobalsTab()
   globalsLayout_left -> addRow(        tr( "Version" ),        choice.version = createChoice( 1, "Live" ) );
 #endif
 #endif
-  globalsLayout_left -> addRow( tr(  "Target Error" ),    choice.target_error = createChoice( 9, "N/A", "Auto", "1%", "0.5%", "0.3%", "0.1%", "0.05%", "0.03%", "0.01%" ) );
-  globalsLayout_left -> addRow( tr(    "Iterations" ),      choice.iterations = addValidatorToComboBox( 1, INT_MAX, createChoice( 9, "1", "100", "1000", "10000", "25000", "50000", "100000", "250000", "500000" ) ) );
-  globalsLayout_left -> addRow( tr(  "Length (sec)" ),    choice.fight_length = addValidatorToComboBox( 1, 10000, createChoice( 10, "100", "150", "200", "250", "300", "350", "400", "450", "500", "600" ) ) );
-  globalsLayout_left -> addRow( tr(   "Vary Length %" ),  choice.fight_variance = addValidatorToComboBox( 0, 100, createChoice( 6, "0", "10", "20", "30", "40", "50" ) ) );
-  globalsLayout_left -> addRow( tr(   "Fight Style" ),     choice.fight_style = createChoice( 8, "Patchwerk", "HecticAddCleave", "HelterSkelter", "Ultraxion", "LightMovement", "HeavyMovement", "Beastlord", "CastingPatchwerk" ) );
-  globalsLayout_left -> addRow( tr( "Challenge Mode" ), choice.challenge_mode = createChoice( 2, "Disabled", "Enabled" ) );
-  globalsLayout_left -> addRow( tr( "Default Role" ),     choice.default_role = createChoice( 4, "Auto", "DPS", "Heal", "Tank" ) );
-  globalsLayout_left -> addRow( tr( "GUI Localization" ),     choice.gui_localization = createChoice( 5, "auto", "en", "de", "zh", "it" ) );
+  globalsLayout_left->addRow( tr( "Target Error" ),     choice.target_error     = createChoice( 9, "N/A", "Auto", "1%", "0.5%", "0.3%", "0.1%", "0.05%", "0.03%", "0.01%" ) );
+  globalsLayout_left->addRow( tr( "Iterations" ),       choice.iterations       = addValidatorToComboBox( 1, INT_MAX, createChoice( 9, "1", "100", "1000", "10000", "25000", "50000", "100000", "250000", "500000" ) ) );
+  globalsLayout_left->addRow( tr( "Length (sec)" ),     choice.fight_length     = addValidatorToComboBox( 1, 10000, createChoice( 10, "100", "150", "200", "250", "300", "350", "400", "450", "500", "600" ) ) );
+  globalsLayout_left->addRow( tr( "Vary Length %" ),    choice.fight_variance   = addValidatorToComboBox( 0, 100, createChoice( 6, "0", "10", "20", "30", "40", "50" ) ) );
+  globalsLayout_left->addRow( tr( "Fight Style" ),      choice.fight_style      = createChoice( 9, "Patchwerk", "HecticAddCleave", "HelterSkelter", "Ultraxion", "LightMovement", "HeavyMovement", "Beastlord", "CastingPatchwerk", "DungeonSlice" ) );
+  globalsLayout_left->addRow( tr( "Challenge Mode" ),   choice.challenge_mode   = createChoice( 2, "Disabled", "Enabled" ) );
+  globalsLayout_left->addRow( tr( "Default Role" ),     choice.default_role     = createChoice( 4, "Auto", "DPS", "Heal", "Tank" ) );
+  globalsLayout_left->addRow( tr( "GUI Localization" ), choice.gui_localization = createChoice( 5, "auto", "en", "de", "zh", "it" ) );
+  globalsLayout_left->addRow( tr( "Update Check" ),     choice.update_check = createChoice( 2, "Yes", "No" ) );
 
   QPushButton* resetb = new QPushButton( tr("Reset all Settings" ), this );
   QFont override_font = QFont();
@@ -360,10 +363,16 @@ void SC_OptionsTab::createGlobalsTab()
 
   createItemDataSourceSelector( globalsLayout_right );
 
-  globalsLayout_right -> addRow( tr( "Armory API Key" ), apikey = new QLineEdit() );
-  apikey -> setMaxLength( 32 ); // Api key is 32 characters long.
-  apikey -> setMinimumWidth( 200 );
-  apikey -> setEchoMode( QLineEdit::PasswordEchoOnEdit ); // Only show the key while typing it in.
+  globalsLayout_right -> addRow( tr( "Armory API Client Id" ), api_client_id = new QLineEdit() );
+  globalsLayout_right -> addRow( tr( "Armory API Client Secret" ), api_client_secret = new QLineEdit() );
+
+  api_client_id -> setMaxLength( 32 ); // Api key is 32 characters long.
+  api_client_id -> setMinimumWidth( 200 );
+  api_client_id -> setEchoMode( QLineEdit::PasswordEchoOnEdit ); // Only show the key while typing it in.
+
+  api_client_secret -> setMaxLength( 32 ); // Api key is 32 characters long.
+  api_client_secret -> setMinimumWidth( 200 );
+  api_client_secret -> setEchoMode( QLineEdit::PasswordEchoOnEdit ); // Only show the key while typing it in.
 
   QGroupBox* globalsGroupBox_right = new QGroupBox( tr( "Advanced Options" ) );
   globalsGroupBox_right -> setLayout( globalsLayout_right );
@@ -685,6 +694,7 @@ void SC_OptionsTab::decodeOptions()
   load_setting( settings, "armory_region", choice.armory_region );
   load_setting( settings, "armory_spec", choice.armory_spec );
   load_setting( settings, "gui_localization", choice.gui_localization );
+  load_setting( settings, "update_check", choice.update_check );
   load_setting( settings, "default_role", choice.default_role );
   load_setting( settings, "boss_type", choice.boss_type, "Custom" );
   load_setting( settings, "pvp_crit", choice.pvp_crit, "Disable" );
@@ -693,7 +703,8 @@ void SC_OptionsTab::decodeOptions()
   load_setting( settings, "tmi_window_global", choice.tmi_window, "6" );
   load_setting( settings, "show_etmi", choice.show_etmi );
   load_setting( settings, "world_lag", choice.world_lag, "Medium - 100 ms" );
-  load_setting( settings, "apikey", apikey );
+  load_setting( settings, "api_client_id", api_client_id );
+  load_setting( settings, "api_client_secret", api_client_secret );
   load_setting( settings, "debug", choice.debug, "None" );
   load_setting( settings, "target_level", choice.target_level );
   load_setting( settings, "report_pets", choice.report_pets, "No" );
@@ -773,6 +784,7 @@ void SC_OptionsTab::encodeOptions()
   settings.setValue( "auto_save_location", auto_save_location );
   settings.setValue( "armory_region", choice.armory_region -> currentText() );
   settings.setValue( "gui_localization", choice.gui_localization -> currentText() );
+  settings.setValue( "update_check", choice.update_check -> currentText() );
   settings.setValue( "armory_spec", choice.armory_spec -> currentText() );
   settings.setValue( "default_role", choice.default_role -> currentText() );
   settings.setValue( "boss_type", choice.boss_type -> currentText() );
@@ -781,7 +793,8 @@ void SC_OptionsTab::encodeOptions()
   settings.setValue( "tmi_window_global", choice.tmi_window -> currentText() );
   settings.setValue( "show_etmi", choice.show_etmi -> currentText() );
   settings.setValue( "world_lag", choice.world_lag -> currentText() );
-  settings.setValue( "apikey", apikey -> text() );
+  settings.setValue( "api_client_id", api_client_id -> text() );
+  settings.setValue( "api_client_secret", api_client_secret -> text() );
   settings.setValue( "debug", choice.debug -> currentText() );
   settings.setValue( "target_level", choice.target_level -> currentText() );
   settings.setValue( "pvp_crit", choice.pvp_crit -> currentText() );
@@ -857,7 +870,10 @@ void SC_OptionsTab::createToolTips()
                                         "    Frequent Single and Wave Add Spawns" ) + "\n" +
                                     tr( "CastingPatchwerk: Tank-n-Spank\n"
                                         "    Boss considered always casting\n"
-                                        "    (to test interrupt procs on cooldown)" ) );
+                                        "    (to test interrupt procs on cooldown)" ) + "\n" + 
+                                    tr( "DungeonSlice:\n"
+                                        "    Multi-segment simulation meant to\n"
+                                        "    approximate M+ dungeon and boss pulls" ) );
 
   choice.target_race -> setToolTip( tr( "Race of the target and any adds." ) );
 
@@ -884,6 +900,8 @@ void SC_OptionsTab::createToolTips()
   choice.armory_spec -> setToolTip( tr( "Controls which Talent specification is used when importing profiles from the Armory." ) );
 
   choice.gui_localization -> setToolTip( tr( "Controls the GUI display language." ) );
+
+  choice.update_check -> setToolTip( tr( "Check Simulationcraft updates on startup." ) );
 
   choice.default_role -> setToolTip( tr( "Specify the character role during import to ensure correct action priority list." ) );
 
@@ -993,7 +1011,10 @@ QString SC_OptionsTab::get_globalSettings()
   options += QString::number( fight_variance_ );
   options += "\n";
 
-  options += "fight_style=" + choice.fight_style->currentText() + "\n";
+  if ( choice.fight_style->currentText() != "Patchwerk" )
+  {
+    options += "fight_style=" + choice.fight_style->currentText() + "\n";
+  }
 
   if ( choice.challenge_mode -> currentIndex() > 0 )
     options += "challenge_mode=1\n";
@@ -1278,7 +1299,12 @@ QString SC_OptionsTab::get_player_role()
 
 QString SC_OptionsTab::get_api_key()
 {
-  return apikey -> text();
+  if ( api_client_id->text().size() && api_client_secret->text().size() )
+  {
+    return api_client_id->text() + ':' + api_client_secret->text();
+  }
+
+  return {};
 }
 
 void SC_OptionsTab::createItemDataSourceSelector( QFormLayout* layout )

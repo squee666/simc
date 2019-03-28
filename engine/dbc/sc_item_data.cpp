@@ -37,7 +37,6 @@ namespace {
   };
 
   item_data_t nil_item_data;
-  random_suffix_data_t nil_rsd;
   item_enchantment_data_t nil_ied;
   gem_property_data_t nil_gpd;
   dbc_index_t<item_enchantment_data_t, id_member_policy> item_enchantment_data_index;
@@ -149,88 +148,112 @@ unsigned dbc_t::random_property_max_level() const
 
 const random_prop_data_t& dbc_t::random_property( unsigned ilevel ) const
 {
+  static random_prop_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_rand_prop_points_data[ ilevel - 1 ] : __rand_prop_points_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __rand_prop_points_data[ ilevel - 1 ];
 #endif
 }
 
 const item_scale_data_t& dbc_t::item_damage_1h( unsigned ilevel ) const
 {
+  static item_scale_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_itemdamageonehand_data[ ilevel - 1 ] : __itemdamageonehand_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __itemdamageonehand_data[ ilevel - 1 ];
 #endif
 }
 
 const item_scale_data_t& dbc_t::item_damage_2h( unsigned ilevel ) const
 {
+  static item_scale_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_itemdamagetwohand_data[ ilevel - 1 ] : __itemdamagetwohand_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __itemdamagetwohand_data[ ilevel - 1 ];
 #endif
 }
 
 const item_scale_data_t& dbc_t::item_damage_caster_1h( unsigned ilevel ) const
 {
+  static item_scale_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_itemdamageonehandcaster_data[ ilevel - 1 ] : __itemdamageonehandcaster_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __itemdamageonehandcaster_data[ ilevel - 1 ];
 #endif
 }
 
 const item_scale_data_t& dbc_t::item_damage_caster_2h( unsigned ilevel ) const
 {
+  static item_scale_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_itemdamagetwohandcaster_data[ ilevel - 1 ] : __itemdamagetwohandcaster_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __itemdamagetwohandcaster_data[ ilevel - 1 ];
 #endif
 }
 
 const item_scale_data_t& dbc_t::item_armor_quality( unsigned ilevel ) const
 {
+  static item_scale_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_itemarmorquality_data[ ilevel - 1 ] : __itemarmorquality_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __itemarmorquality_data[ ilevel - 1 ];
 #endif
 }
 
 const item_scale_data_t& dbc_t::item_armor_shield( unsigned ilevel ) const
 {
+  static item_scale_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_itemarmorshield_data[ ilevel - 1 ] : __itemarmorshield_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __itemarmorshield_data[ ilevel - 1 ];
 #endif
 }
 
 const item_armor_type_data_t& dbc_t::item_armor_total( unsigned ilevel ) const
 {
+  static item_armor_type_data_t __default {};
+  if ( ilevel < 1 || ilevel > MAX_ILEVEL )
+  {
+    return __default;
+  }
 #if SC_USE_PTR
-  assert( ilevel > 0 && ( ( ptr && ilevel <= PTR_RAND_PROP_POINTS_SIZE ) || ( ilevel <= RAND_PROP_POINTS_SIZE ) ) );
   return ptr ? __ptr_itemarmortotal_data[ ilevel - 1 ] : __itemarmortotal_data[ ilevel - 1 ];
 #else
-  assert( ilevel > 0 && ( ilevel <= RAND_PROP_POINTS_SIZE ) );
   return __itemarmortotal_data[ ilevel - 1 ];
 #endif
 }
@@ -309,24 +332,6 @@ std::vector<const item_upgrade_t*> dbc_t::item_upgrades( unsigned item_id ) cons
       { return l -> previous_upgrade_id < r -> previous_upgrade_id; } );
 
   return data;
-}
-
-const random_suffix_data_t& dbc_t::random_suffix( unsigned suffix_id ) const
-{
-#if SC_USE_PTR
-  const random_suffix_data_t* p = ptr ? __ptr_rand_suffix_data : __rand_suffix_data;
-#else
-  const random_suffix_data_t* p = __rand_suffix_data;
-#endif
-
-  do
-  {
-    if ( p -> id == suffix_id )
-      return *p;
-  }
-  while ( ( p++ ) -> id );
-
-  return nil_rsd;
 }
 
 const item_enchantment_data_t& dbc_t::item_enchantment( unsigned enchant_id ) const
@@ -1273,6 +1278,31 @@ bool item_database::load_item_from_data( item_t& item )
   item.parsed.data.name = item.name_str.c_str();
 
   util::tokenize( item.name_str );
+
+  // Apply azerite level to item level conversion first, but only for Blizzard API sourced profiles
+  if ( item.player->profile_source_ == profile_source::BLIZZARD_API )
+  {
+    if ( item.parsed.azerite_level > 0 )
+    {
+      item.parsed.data.level = item.player->dbc.azerite_item_level( item.parsed.azerite_level );
+    }
+  }
+
+  // Apply any azerite powers that apply bonus ids
+  for ( auto power_id : item.parsed.azerite_ids )
+  {
+    const auto& power = item.player->dbc.azerite_power( power_id );
+    if ( power.id == 0 || power.bonus_id == 0 )
+    {
+      continue;
+    }
+
+    auto it = range::find( item.parsed.bonus_id, power.bonus_id );
+    if ( it == item.parsed.bonus_id.end() )
+    {
+      item.parsed.bonus_id.push_back( power.bonus_id );
+    }
+  }
 
   // Item bonus for local source only. TODO: BCP API and Wowhead will need ..
   // something similar
